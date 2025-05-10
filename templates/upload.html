@@ -12,6 +12,12 @@
 
   <div id="uploadStatus" class="mt-4"></div>
   <div id="previewArea" class="mt-4"></div>
+
+  <div id="nextStep" class="text-center mt-4" style="display: none;">
+    <a href="/columns" class="btn btn-success btn-lg px-4">
+      ➡️ Continue to Column Selection
+    </a>
+  </div>
 </div>
 
 <script>
@@ -34,6 +40,8 @@ document.getElementById("uploadBtn").addEventListener("click", function () {
   formData.append("file", file);
 
   document.getElementById("uploadStatus").innerHTML = "<div class='spinner-border text-primary' role='status'></div> Uploading...";
+  document.getElementById("nextStep").style.display = "none";
+  document.getElementById("previewArea").innerHTML = "";
 
   fetch("/upload_ajax", {
     method: "POST",
@@ -41,8 +49,13 @@ document.getElementById("uploadBtn").addEventListener("click", function () {
   })
     .then(response => response.json())
     .then(data => {
-      document.getElementById("uploadStatus").innerHTML = "<div class='alert alert-success'>✅ Upload successful!</div>";
-      document.getElementById("previewArea").innerHTML = data.preview_html;
+      if (data.preview_html) {
+        document.getElementById("uploadStatus").innerHTML = "<div class='alert alert-success'>✅ Upload successful!</div>";
+        document.getElementById("previewArea").innerHTML = data.preview_html;
+        document.getElementById("nextStep").style.display = "block";
+      } else {
+        document.getElementById("uploadStatus").innerHTML = "<div class='alert alert-danger'>❌ " + (data.error || "Upload failed.") + "</div>";
+      }
     })
     .catch(error => {
       document.getElementById("uploadStatus").innerHTML = "<div class='alert alert-danger'>❌ Upload failed.</div>";
