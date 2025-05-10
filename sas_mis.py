@@ -261,5 +261,9 @@ def download_config():
 
     return send_from_directory(app.config['DOWNLOAD_FOLDER'], 'config.csv', as_attachment=True)
 
+@app.route('/walkthrough')
+def walkthrough():
+    return render_template('walkthrough.html')
+
 if __name__ == '__main__':
     app.run(debug=True)
