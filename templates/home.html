@@ -2,7 +2,7 @@
 {% block content %}
 <div class="container mt-5">
   <h2 class="mb-4">📊 Welcome to the SAS-Based MIS Application</h2>
-  <p class="lead">Built for Business Analytics Coursework 2 (7CS512)</p>
+  <p class="lead">Built for Business Analytics Coursework (7CS512)</p>
 
   <div class="alert alert-info mt-4">
     <strong>👋 Introduction:</strong> This web-based MIS platform allows users to upload datasets, apply dynamic filters, generate sampling files, and prepare configuration files for SAS analytics.
@@ -17,7 +17,9 @@
     <li class="list-group-item">Select SAS procedures and variables → Export config.csv</li>
   </ol>
 
-  <div class="mt-5 p-4 bg-white border border-4 rounded shadow animate__animated animate__fadeInUp" style="border-color: #FFD700;">
+  <!-- Acknowledgment Section -->
+  <div class="mt-5 p-4 bg-white border border-4 rounded shadow animate__animated animate__fadeInUp"
+       style="border-color: #FFD700;">
     <blockquote class="blockquote mb-0">
       <p class="fs-5 text-dark">
         We would like to express our heartfelt thanks to <span class="fw-bold" title="Visionary. Educator. Legend.">👑 Professor Alexander Rompas</span>.
@@ -29,14 +31,21 @@
         We are very grateful for the opportunity to learn under your mentorship.
       </p>
       <p class="fw-bold text-primary">Thank you, Professor — truly! 🙏</p>
-      <footer class="blockquote-footer mt-2">With sincere gratitude, <cite title="Course Team">Γκουβάς Αλέξανδρος, Οικονόμου Παναγιώτης and Roxanne Avero</cite></footer>
+       <footer class="blockquote-footer mt-2">With sincere gratitude, <cite title="Course Team">Γκουβάς Αλέξανδρος, Οικονόμου Παναγιώτης and Roxanne Avero</cite></footer>
     </blockquote>
 
     <div class="text-end mt-3">
-      <a href="mailto:a.rompas@mc-class.gr" class="btn btn-warning btn-lg shadow">
+      <a href="mailto:alex.rompas@university.ac.uk" class="btn btn-warning btn-lg shadow">
         👏 Show Your Appreciation
       </a>
     </div>
+  </div>
+
+  <!-- Start Upload Button -->
+  <div class="text-center mt-5">
+    <a href="/upload" class="btn btn-primary btn-lg px-5 shadow">
+      🚀 Start Uploading Your Dataset
+    </a>
   </div>
 </div>
 
@@ -52,9 +61,3 @@
   </div>
 </div>
 {% endblock %}
-
-<div class="text-center mt-5">
-  <a href="/upload" class="btn btn-primary btn-lg px-5 shadow">
-    🚀 Start Uploading Your Dataset
-  </a>
-</div>
