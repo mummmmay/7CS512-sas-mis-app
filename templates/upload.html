@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% block content %}
+    <form method="POST" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label for="file" class="form-label">Upload your dataset</label>
+            <input class="form-control" type="file" name="file" id="file" required>
+        </div>
+        <button class="btn btn-primary" type="submit">Upload & Preview</button>
+    </form>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if table %}
+        <hr>
+        <h3>Preview of {{ filename }}</h3>
+        <div class="table-responsive">
+            {{ table|safe }}
+        </div>
+        <form action="/columns" method="get">
+            <button class="btn btn-success mt-3" type="submit">Next: View Columns & Data Types</button>
+        </form>
+    {% endif %}
+{% endblock %}

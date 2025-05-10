@@ -1,0 +1,126 @@
+{% extends "layout.html" %}
+{% block content %}
+<h3>Create a New Conditional Column</h3>
+<form method="POST">
+    <div id="condition-builder">
+        <div class="row mb-2 condition-row">
+            <div class="col-md-3">
+                <select name="condition" class="form-select col-select" onchange="updateOperators(this); updateValues(this);">
+                    {% for col in columns %}
+                    <option value="{{ col }}">{{ col }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="operator" class="form-select operator-select"></select>
+            </div>
+            <div class="col-md-3">
+                <input name="value" list="" class="form-control value-input">
+                <datalist class="value-datalist"></datalist>
+            </div>
+            <div class="col-md-2">
+                <select name="logic" class="form-select">
+                    <option value="">(none)</option>
+                    <option value="and">AND</option>
+                    <option value="or">OR</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <button type="button" class="btn btn-outline-secondary mb-3" onclick="addCondition()">+ Add Condition</button>
+
+    <div class="mb-2">
+        <label>New Column Name:</label>
+        <input type="text" name="new_col_name" class="form-control" required>
+    </div>
+    <div class="mb-2">
+        <label>Value if condition is met:</label>
+        <input type="text" name="true_value" class="form-control" required>
+    </div>
+    <div class="mb-2">
+        <label>Value if condition is NOT met:</label>
+        <input type="text" name="false_value" class="form-control" required>
+    </div>
+
+    <button type="submit" class="btn btn-success">Generate New Column</button>
+    <a href="/sample" class="btn btn-secondary ms-2">Skip This Step</a>
+</form>
+
+{% if preview %}
+    <hr>
+    <h4>Preview of New Column</h4>
+    <div class="table-responsive">{{ preview|safe }}</div>
+    <a href="/sample" class="btn btn-primary mt-3">Next: Sample 20k Rows</a>
+{% endif %}
+
+<script>
+const uniqueValues = {{ unique_values | tojson }};
+const columnTypes = {{ column_types | tojson }};
+
+function updateValues(selectElem) {
+    const selectedCol = selectElem.value;
+    const values = uniqueValues[selectedCol] || [];
+
+    const row = selectElem.closest('.condition-row');
+    const datalist = row.querySelector('.value-datalist');
+    const input = row.querySelector('.value-input');
+
+    datalist.innerHTML = '';
+    input.setAttribute("list", `list-${selectedCol}`);
+    datalist.id = `list-${selectedCol}`;
+
+    values.forEach(val => {
+        const option = document.createElement('option');
+        option.value = val;
+        datalist.appendChild(option);
+    });
+}
+
+function updateOperators(selectElem) {
+    const selectedCol = selectElem.value;
+    const type = columnTypes[selectedCol];
+    const operatorSelect = selectElem.closest('.condition-row').querySelector('.operator-select');
+    operatorSelect.innerHTML = '';
+
+    const ops = type === 'numeric'
+        ? ['==', '!=', '>', '<', '>=', '<=']
+        : ['==', '!=', 'contains', 'startswith', 'endswith'];
+
+    ops.forEach(op => {
+        const option = document.createElement('option');
+        option.value = op;
+        option.text = op;
+        operatorSelect.appendChild(option);
+    });
+}
+
+function addCondition() {
+    const original = document.querySelector('.condition-row');
+    const clone = original.cloneNode(true);
+
+    clone.querySelectorAll('select').forEach(sel => {
+        sel.selectedIndex = 0;
+    });
+    clone.querySelector('.value-input').value = '';
+    clone.querySelector('.value-datalist').innerHTML = '';
+
+    const colSelect = clone.querySelector('.col-select');
+    colSelect.onchange = function () {
+        updateOperators(this);
+        updateValues(this);
+    };
+
+    document.getElementById('condition-builder').appendChild(clone);
+    updateOperators(colSelect);
+    updateValues(colSelect);
+}
+
+window.onload = function () {
+    document.querySelectorAll('.col-select').forEach(select => {
+        updateOperators(select);
+        updateValues(select);
+    });
+};
+</script>
+{% endblock %}

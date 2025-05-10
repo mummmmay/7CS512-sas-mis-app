@@ -1,0 +1,24 @@
+{% if preview_data %}
+<hr>
+<h5>📋 Preview of config.csv</h5>
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <thead>
+            <tr><th>Procedure</th><th>Variable</th></tr>
+        </thead>
+        <tbody>
+            {% for row in preview_data %}
+            <tr>
+                <td>{{ row.analysis }}</td>
+                <td>{{ row.variable }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<form action="{{ url_for('download_config') }}" method="post">
+    <input type="hidden" name="preview_rows" value="{{ preview_data | tojson }}">
+    <button type="submit" class="btn btn-primary mt-3">⬇️ Confirm & Download config.csv</button>
+</form>
+{% endif %}

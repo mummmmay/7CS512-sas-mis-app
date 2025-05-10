@@ -1,0 +1,8 @@
+{% extends "layout.html" %}
+{% block content %}
+    <h3>Preview of {{ filename }}</h3>
+    <div class="table-responsive">
+        {{ table|safe }}
+    </div>
+    <a href="/columns" class="btn btn-success mt-3">Next: View Columns & Data Types</a>
+{% endblock %}

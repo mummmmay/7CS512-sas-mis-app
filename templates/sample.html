@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block content %}
+<h3>🎯 Sampled {{ n }} Rows Successfully!</h3>
+
+<p class="text-muted">Below is a summary of the sampled dataset:</p>
+
+<!-- Summary Statistics -->
+<div class="table-responsive">
+    {{ summary|safe }}
+</div>
+
+<hr>
+
+<!-- Preview of First 10 Rows -->
+<h5>🔍 Preview of Sampled Rows (First 10 Rows)</h5>
+<div class="table-responsive">
+    {{ preview|safe }}
+</div>
+
+<hr>
+
+<!-- Working Download Button -->
+<a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-primary mt-3">
+    ⬇️ Download Sampled CSV
+</a>
+{% endblock %}
