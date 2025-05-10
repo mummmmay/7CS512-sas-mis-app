@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4">📊 Welcome to the SAS-Based MIS Application</h2>
+  <p class="lead">Built for Business Analytics Coursework (7CS512)</p>
+
+  <div class="alert alert-info mt-4">
+    <strong>👋 Introduction:</strong> This web-based MIS platform allows users to upload datasets, apply dynamic filters, generate sampling files, and prepare configuration files for SAS analytics.
+  </div>
+
+  <h4 class="mt-4">🛠️ How to Use This Tool</h4>
+  <ol class="list-group list-group-numbered mb-4">
+    <li class="list-group-item">Upload your dataset (CSV, Excel, or SAS7BDAT)</li>
+    <li class="list-group-item">Select the columns to include</li>
+    <li class="list-group-item">(Optional) Create new conditional columns</li>
+    <li class="list-group-item">Generate a 20K sample dataset</li>
+    <li class="list-group-item">Select SAS procedures and variables → Export config.csv</li>
+  </ol>
+
+  <div class="mt-5 p-4 bg-white border border-4 rounded shadow animate__animated animate__fadeInUp" style="border-color: gold;">
+    <blockquote class="blockquote mb-0">
+      <p class="fs-5 text-dark">
+        We would like to express our heartfelt thanks to <span class="fw-bold" title="Visionary. Educator. Legend.">👑 Professor Alexander Rompas</span>.
+        Your patience, guidance, and encouragement made all the difference — especially when things felt overwhelming.
+      </p>
+      <p class="text-secondary">
+        Thank you for believing in us, for pushing us to think deeper, and for making this journey meaningful.
+        We will carry the lessons from this course far beyond the classroom.
+        We are very grateful for the opportunity to learn under your mentorship.
+      </p>
+      <p class="fw-bold text-primary">Thank you, Professor — truly! 🙏</p>
+      <footer class="blockquote-footer mt-2">With sincere gratitude, <cite title="Course Team">Γκουβάς Αλέξανδρος, Οικονόμου Παναγιώτης and Roxanne Avero</cite></footer>
+    </blockquote>
+
+    <div class="text-end mt-3">
+      <a href="mailto:alex.rompas@university.ac.uk" class="btn btn-warning btn-lg shadow">
+        👏 Show Your Appreciation
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div id="thankYouToast" class="toast align-items-center text-bg-light border-0 shadow-sm" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body">
+        🙏 Thank you, Professor Rompas, for everything you’ve taught us!
+      </div>
+      <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+</div>
+{% endblock %}

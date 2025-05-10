@@ -18,8 +18,8 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/')
-def home_redirect():
-    return redirect('/upload')
+def home():
+    return render_template('home.html')
 
 # Step 1: Upload and Preview
 @app.route('/upload', methods=['GET', 'POST'])
