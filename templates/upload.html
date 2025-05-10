@@ -1,33 +1,52 @@
 {% extends "layout.html" %}
 {% block content %}
-    <form method="POST" enctype="multipart/form-data">
-        <div class="mb-3">
-            <label for="file" class="form-label">Upload your dataset</label>
-            <input class="form-control" type="file" name="file" id="file" required>
-        </div>
-        <button class="btn btn-primary" type="submit">Upload & Preview</button>
-    </form>
+<div class="container mt-5">
+  <h2>📤 Upload Your Dataset</h2>
+  <p class="text-muted">Supported formats: CSV, Excel (.xlsx), and SAS7BDAT</p>
 
-    <!-- Flash messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+  <div id="upload-area" class="border border-3 rounded p-5 text-center bg-light" style="border-style: dashed;">
+    <p class="fs-5">Drag & drop your file here or</p>
+    <input type="file" id="fileInput" class="form-control w-50 mx-auto" accept=".csv,.xlsx,.sas7bdat">
+    <button class="btn btn-primary mt-3" id="uploadBtn">📂 Upload File</button>
+  </div>
 
-    {% if table %}
-        <hr>
-        <h3>Preview of {{ filename }}</h3>
-        <div class="table-responsive">
-            {{ table|safe }}
-        </div>
-        <form action="/columns" method="get">
-            <button class="btn btn-success mt-3" type="submit">Next: View Columns & Data Types</button>
-        </form>
-    {% endif %}
+  <div id="uploadStatus" class="mt-4"></div>
+  <div id="previewArea" class="mt-4"></div>
+</div>
+
+<script>
+document.getElementById("uploadBtn").addEventListener("click", function () {
+  const fileInput = document.getElementById("fileInput");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    alert("Please select a file first.");
+    return;
+  }
+
+  const allowedTypes = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/x-sas-data'];
+  if (!allowedTypes.includes(file.type) && !file.name.endsWith('.sas7bdat')) {
+    alert("Unsupported file format.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  document.getElementById("uploadStatus").innerHTML = "<div class='spinner-border text-primary' role='status'></div> Uploading...";
+
+  fetch("/upload_ajax", {
+    method: "POST",
+    body: formData,
+  })
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById("uploadStatus").innerHTML = "<div class='alert alert-success'>✅ Upload successful!</div>";
+      document.getElementById("previewArea").innerHTML = data.preview_html;
+    })
+    .catch(error => {
+      document.getElementById("uploadStatus").innerHTML = "<div class='alert alert-danger'>❌ Upload failed.</div>";
+    });
+});
+</script>
 {% endblock %}
