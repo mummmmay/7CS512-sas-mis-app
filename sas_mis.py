@@ -67,6 +67,31 @@ def upload_and_preview():
             return redirect(request.url)
 
     return render_template('upload.html', table=table_html, filename=filename)
+    
+@app.route('/upload_ajax', methods=['POST'])
+def upload_ajax():
+    file = request.files.get('file')
+    if not file:
+        return jsonify({'error': 'No file uploaded'}), 400
+
+    filename = file.filename.lower()
+    try:
+        if filename.endswith('.csv'):
+            df = pd.read_csv(file)
+        elif filename.endswith('.xlsx'):
+            df = pd.read_excel(file)
+        elif filename.endswith('.sas7bdat'):
+            df = pd.read_sas(file)
+        else:
+            return jsonify({'error': 'Unsupported file format'}), 400
+
+        preview_html = df.head(10).to_html(classes='table table-bordered table-sm', index=False)
+        df.to_pickle('uploads/full_data.pkl')  # Store for next steps
+        return jsonify({'preview_html': preview_html})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 # Step 2: Column Selector
 @app.route('/columns', methods=['GET', 'POST'])
