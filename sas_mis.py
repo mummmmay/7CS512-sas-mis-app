@@ -62,6 +62,32 @@ def column_selector():
         return redirect('/upload')
 
     columns_info = [{"name": col, "dtype": str(dtype)} for col, dtype in df.dtypes.items()]
+
+    if request.method == 'POST':
+        selected_columns = request.form.getlist('columns')
+        if not selected_columns:
+            flash("Please select at least one column.", "warning")
+            return redirect(request.url)
+
+        df_filtered = df[selected_columns]
+        df_filtered.to_pickle(os.path.join(UPLOAD_FOLDER, 'selected_data.pkl'))
+
+        # Clear previously conditioned data if any
+        conditioned_path = os.path.join(UPLOAD_FOLDER, 'conditioned_data.pkl')
+        if os.path.exists(conditioned_path):
+            os.remove(conditioned_path)
+
+        flash("✅ Columns saved and conditioned data cleared. Continue to the next step.", "success")
+        return redirect('/conditions')
+
+    return render_template('columns.html', columns=columns_info)
+    try:
+        df = pd.read_pickle(os.path.join(UPLOAD_FOLDER, 'full_data.pkl'))
+    except FileNotFoundError:
+        flash("No dataset found. Please upload a file first.", "danger")
+        return redirect('/upload')
+
+    columns_info = [{"name": col, "dtype": str(dtype)} for col, dtype in df.dtypes.items()]
     if request.method == 'POST':
         selected_columns = request.form.getlist('columns')
         if not selected_columns:
@@ -75,85 +101,93 @@ def column_selector():
     return render_template('columns.html', columns=columns_info)
 
 @app.route('/conditions', methods=['GET', 'POST'])
-def condition_builder():
+def conditional_builder():
     try:
         df = pd.read_pickle(os.path.join(UPLOAD_FOLDER, 'selected_data.pkl'))
-    except FileNotFoundError:
-        flash("No column-filtered dataset found. Please complete column selection first.", "danger")
-        return redirect('/columns')
+    except Exception:
+        flash("⚠️ Dataset not found. Please complete upload and column selection first.", "danger")
+        return redirect('/upload')
 
-    column_names = df.columns.tolist()
-    column_types = {col: "string" if df[col].dtype == 'object' else "numeric" for col in df.columns}
-    unique_values = {col: df[col].dropna().astype(str).value_counts().head(5).index.tolist() for col in df.columns}
-    preview_html = None
+    preview_table = None
+    all_inputs = request.form.to_dict(flat=False)
+    added_any_column = False
 
     if request.method == 'POST':
-        conditions = request.form.getlist('condition')
-        operators = request.form.getlist('operator')
-        values = request.form.getlist('value')
-        logics = request.form.getlist('logic')
+        group_indices = all_inputs.get("group_index[]", [])
+        for idx, group_id in enumerate(group_indices):
+            col_name = all_inputs.get(f"column_name_{group_id}", [""])[0].strip()
+            val_true = all_inputs.get(f"value_true_{group_id}", [""])[0].strip()
+            val_false = all_inputs.get(f"value_false_{group_id}", [""])[0].strip()
+            fields = all_inputs.get(f"field_{group_id}[]", [])
+            operators = all_inputs.get(f"operator_{group_id}[]", [])
+            values = all_inputs.get(f"value_{group_id}[]", [])
+            logics = all_inputs.get(f"logic_{group_id}[]", [])
 
-        true_value = request.form.get('true_value')
-        false_value = request.form.get('false_value')
-        new_col_name = request.form.get('new_col_name')
-
-        if not new_col_name:
-            flash("Please enter a name for the new column.", "warning")
-            return redirect(request.url)
-
-        expression_parts = []
-        for i in range(len(conditions)):
-            col = conditions[i].strip()
-            op = operators[i].strip()
-            val = values[i].strip()
-            logic = logics[i].strip().lower() if i < len(logics) else ''
-
-            if not col or not op or not val:
+            if not col_name or not val_true or not val_false:
+                flash(f"⚠️ Skipping column {idx+1}: missing name or true/false values.", "warning")
                 continue
 
-            dtype = df[col].dtype
-            if pd.api.types.is_numeric_dtype(dtype):
+            if not fields or not operators or not values:
+                flash(f"⚠️ Skipping column '{col_name}': missing condition rules.", "warning")
+                continue
+
+            conditions = []
+            for j in range(len(fields)):
+                field = fields[j].strip()
+                op = operators[j].strip()
+                val = values[j].strip()
+                logic = logics[j].strip().lower() if j < len(logics) else ""
+
+                if not field or not op or not val:
+                    continue
+
                 try:
-                    val = float(val)
-                    part = f"(df['{col}'] {op} {val})"
-                except ValueError:
-                    flash(f"'{val}' is not a valid number for column '{col}'.", "danger")
-                    return redirect(request.url)
-            else:
-                val = str(val)
-                if op == 'contains':
-                    part = f"(df['{col}'].str.contains({repr(val)}, na=False))"
-                elif op == 'startswith':
-                    part = f"(df['{col}'].str.startswith({repr(val)}, na=False))"
-                elif op == 'endswith':
-                    part = f"(df['{col}'].str.endswith({repr(val)}, na=False))"
-                elif op in ['==', '!=']:
-                    part = f"(df['{col}'] {op} {repr(val)})"
+                    val = float(val) if val.replace('.', '', 1).isdigit() else val
+                except:
+                    pass
+
+                if op == "contains":
+                    cond = f"(df['{field}'].astype(str).str.contains(r'{val}'))"
+                elif op == "startswith":
+                    cond = f"(df['{field}'].astype(str).str.startswith('{val}'))"
+                elif op == "endswith":
+                    cond = f"(df['{field}'].astype(str).str.endswith('{val}'))"
                 else:
-                    flash(f"Unsupported operator '{op}' for column '{col}'.", "danger")
-                    return redirect(request.url)
+                    cond = f"(df['{field}'] {op} {repr(val)})"
 
-            expression_parts.append(part)
-            if logic == "and":
-                expression_parts.append("&")
-            elif logic == "or":
-                expression_parts.append("|")
+                if j > 0 and logic in ['and', 'or']:
+                    cond = f"{logic} {cond}"
+                conditions.append(cond)
 
-        if not expression_parts:
-            flash("Please enter at least one valid condition.", "warning")
-            return redirect(request.url)
+            if not conditions:
+                flash(f"⚠️ No valid rules defined for '{col_name}'.", "warning")
+                continue
 
-        full_condition = ' '.join(expression_parts)
-        try:
-            condition_result = eval(f"({full_condition})")
-            df[new_col_name] = np.where(condition_result, true_value, false_value)
+            full_expr = " ".join(conditions)
+            try:
+                result = eval(full_expr)
+                df[col_name] = result.map({True: val_true, False: val_false})
+                added_any_column = True
+            except Exception as e:
+                flash(f"❌ Failed to evaluate logic for '{col_name}': {e}", "danger")
+
+        if added_any_column:
             df.to_pickle(os.path.join(UPLOAD_FOLDER, 'conditioned_data.pkl'))
-            preview_html = df[[new_col_name]].head(5).to_html(classes="table table-bordered", index=False)
-        except Exception as e:
-            flash(f"Error in condition logic: {e}", "danger")
-            return redirect(request.url)
+            preview_table = df.head(10).to_html(classes="table table-bordered table-hover", index=False)
+            flash("✅ Column(s) successfully added!", "success")
+        else:
+            flash("⚠️ No columns were added. Please check your inputs.", "warning")
 
-    return render_template('conditions.html', columns=column_names, preview=preview_html, unique_values=unique_values, column_types=column_types)
+    column_types = dict(df.dtypes.apply(lambda d: d.name))
+    unique_values = {col: df[col].dropna().astype(str).unique().tolist() for col in df.columns}
+
+    return render_template(
+        'conditions.html',
+        columns=list(df.columns),
+        column_types=column_types,
+        unique_values=unique_values,
+        preview_table=preview_table
+    )
 
 @app.route('/sample')
 def sample_dataset():
@@ -167,47 +201,82 @@ def sample_dataset():
     df_sample = df.sample(n=n, random_state=42)
     filename = 'dataset_sampling.csv'
     filepath = os.path.join(DOWNLOAD_FOLDER, filename)
+
+    # Save as CSV and also as PKL for /config use
     df_sample.to_csv(filepath, index=False)
+    df_sample.to_pickle(os.path.join(UPLOAD_FOLDER, 'sampled_data.pkl'))
 
     summary_html = df_sample.describe(include='all').transpose().head(10).to_html(classes='table table-bordered')
-    preview_html = df_sample.head(10).to_html(classes='table table-striped table-sm', index=False)
+    preview_html = df_sample.head(10).to_html(
+        classes="table table-striped table-bordered table-sm text-center align-middle", 
+        index=False,
+        border=0
+    )
 
     return render_template('sample.html', n=n, summary=summary_html, preview=preview_html, filename=filename)
 
 @app.route('/config', methods=['GET', 'POST'])
-def config_generator():
+def config_page():
     try:
-        df = pd.read_pickle(os.path.join(UPLOAD_FOLDER, 'conditioned_data.pkl'))
-    except FileNotFoundError:
-        flash("Processed dataset not found. Please complete the previous steps.", "danger")
-        return redirect('/conditions')
-
-    columns = df.columns.tolist()
-    default_procs = ['proc_freq', 'proc_means', 'proc_logistic']
-    preview_data = None
+        df = pd.read_pickle(os.path.join(UPLOAD_FOLDER, 'sampled_data.pkl'))
+    except Exception:
+        flash("⚠️ Please sample a dataset before configuring SAS procedures.", "warning")
+        return redirect('/sample')
 
     if request.method == 'POST':
-        procedures = request.form.getlist('procedure')
-        custom_procs = request.form.getlist('custom_proc')
-        rows = []
+        selected_procs = []
+        for key, value in request.form.items():
+            if key.startswith('variable_'):
+                proc_name = key.replace('variable_', '')
+                variables = request.form.getlist(key)
+                if variables:
+                    selected_procs.append({'procedure': proc_name, 'variables': variables})
+            elif key == 'custom_proc':
+                custom_proc = value.strip()
+                custom_vars = request.form.getlist('custom_variables')
+                if custom_proc and custom_vars:
+                    selected_procs.append({'procedure': custom_proc, 'variables': custom_vars})
 
-        for i in range(len(procedures)):
-            proc = procedures[i].strip()
-            if proc == 'custom':
-                proc = custom_procs[i].strip().lower()
-            else:
-                proc = proc.lower()
-
-            selected_vars = request.form.getlist(f'variable_{i}')
-            for var in selected_vars:
-                rows.append({'analysis': proc, 'variable': var})
-
-        if rows:
-            preview_data = pd.DataFrame(rows)
+        if selected_procs:
+            import csv
+            config_path = os.path.join(UPLOAD_FOLDER, 'config.csv')
+            with open(config_path, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['procedure', 'variables'])
+                for entry in selected_procs:
+                    writer.writerow([entry['procedure'], ','.join(entry['variables'])])
+            flash("✅ Config.csv generated successfully!", "success")
+            return send_file(config_path, as_attachment=True)
         else:
-            flash("Please select at least one variable.", "warning")
+            flash("⚠️ No procedures or variables selected.", "warning")
 
-    return render_template('config.html', columns=columns, default_procs=default_procs, preview_data=preview_data.to_dict(orient='records') if preview_data is not None else None)
+    default_procs = {
+        "BASIC": {
+            "PROC CONTENTS": "View metadata of dataset.",
+            "PROC PRINT": "Print dataset rows.",
+            "PROC MEANS": "Summary stats for numeric columns.",
+            "PROC FREQ": "Frequency tables for categorical vars.",
+            "PROC UNIVARIATE": "Detailed distribution analysis."
+        },
+        "ADVANCED": {
+            "PROC LOGISTIC": "Binary classification.",
+            "PROC REG": "Linear regression.",
+            "PROC CLUSTER": "Customer segmentation.",
+            "PROC FACTOR": "Factor analysis."
+        },
+        "VISUAL": {
+            "PROC SGPLOT": "Bar, line, histogram, scatter.",
+            "PROC SGSCATTER": "Scatter plots or matrices.",
+            "PROC SGPANEL": "Facet/group plots."
+        },
+        "DATA_SQL": {
+            "PROC SQL": "Run SQL-like queries.",
+            "PROC SORT": "Sort dataset by variables.",
+            "PROC TRANSPOSE": "Reshape dataset (wide/long)."
+        }
+    }
+
+    return render_template('config.html', default_procs=default_procs, columns=list(df.columns))
 
 @app.route('/download_config', methods=['POST'])
 def download_config():
@@ -216,15 +285,29 @@ def download_config():
         flash("No config data to download.", "danger")
         return redirect('/config')
 
-    preview_data = pd.DataFrame(json.loads(preview_json))
-    config_path = os.path.join(DOWNLOAD_FOLDER, 'config.csv')
-    preview_data.to_csv(config_path, index=False)
-
-    return send_from_directory(DOWNLOAD_FOLDER, 'config.csv', as_attachment=True)
+    try:
+        preview_data = pd.DataFrame(json.loads(preview_json))
+        preview_data = (
+            preview_data.apply(lambda col: col.str.strip() if col.dtype == 'object' else col)
+            .assign(analysis=lambda df: df['analysis'].str.upper())
+            .groupby('analysis')['variable']
+            .apply(lambda x: ' '.join(sorted(x.unique())))
+            .reset_index()
+        )
+        config_path = os.path.join(DOWNLOAD_FOLDER, 'config.csv')
+        preview_data.to_csv(config_path, index=False, encoding='utf-8')
+        return send_from_directory(DOWNLOAD_FOLDER, 'config.csv', as_attachment=True)
+    except Exception as e:
+        flash(f"Error generating config file: {e}", "danger")
+        return redirect('/config')
 
 @app.route('/walkthrough')
 def walkthrough():
     return render_template('walkthrough.html')
+
+@app.route('/download/<filename>')
+def download_file(filename):
+    return send_from_directory(DOWNLOAD_FOLDER, filename, as_attachment=True)
 
 if __name__ == "__main__":
     app.run(debug=True)
