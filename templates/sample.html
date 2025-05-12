@@ -1,26 +1,36 @@
 {% extends "layout.html" %}
 {% block content %}
-<h3>🎯 Sampled {{ n }} Rows Successfully!</h3>
+<div class="container mt-4">
+    <h3 class="mb-3">🎯 Sampled {{ n }} Rows Successfully!</h3>
 
-<p class="text-muted">Below is a summary of the sampled dataset:</p>
+    <p class="text-muted">Here is a preview of the sampled dataset and summary statistics.</p>
 
-<!-- Summary Statistics -->
-<div class="table-responsive">
-    {{ summary|safe }}
+    <div class="mb-4">
+        <h5>📊 Dataset Summary</h5>
+        <div class="table-responsive">
+            {{ summary|safe }}
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="mb-4">
+        <h5>🔍 Preview of Sampled Rows (First 10)</h5>
+        <div class="table-responsive">
+            {{ preview|safe }}
+        </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-3 mt-4">
+        <!-- Download Sampled CSV -->
+        <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-outline-primary">
+            ⬇️ Download Sampled Dataset
+        </a>
+
+        <!-- Continue to PROC Selection (Direct path fallback) -->
+        <a href="/config" class="btn btn-outline-success">
+            ⚙️ Continue to PROC Selection
+        </a>
+    </div>
 </div>
-
-<hr>
-
-<!-- Preview of First 10 Rows -->
-<h5>🔍 Preview of Sampled Rows (First 10 Rows)</h5>
-<div class="table-responsive">
-    {{ preview|safe }}
-</div>
-
-<hr>
-
-<!-- Working Download Button -->
-<a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-primary mt-3">
-    ⬇️ Download Sampled CSV
-</a>
 {% endblock %}

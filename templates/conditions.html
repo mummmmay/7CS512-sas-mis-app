@@ -1,126 +1,133 @@
+
 {% extends "layout.html" %}
 {% block content %}
-<h3>Create a New Conditional Column</h3>
-<form method="POST">
-    <div id="condition-builder">
-        <div class="row mb-2 condition-row">
-            <div class="col-md-3">
-                <select name="condition" class="form-select col-select" onchange="updateOperators(this); updateValues(this);">
-                    {% for col in columns %}
-                    <option value="{{ col }}">{{ col }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <select name="operator" class="form-select operator-select"></select>
-            </div>
-            <div class="col-md-3">
-                <input name="value" list="" class="form-control value-input">
-                <datalist class="value-datalist"></datalist>
-            </div>
-            <div class="col-md-2">
-                <select name="logic" class="form-select">
-                    <option value="">(none)</option>
-                    <option value="and">AND</option>
-                    <option value="or">OR</option>
-                </select>
+<div class="container mt-4">
+    <h2 class="mb-4">🧠 Conditional Logic Builder</h2>
+    <p>Define rules per column. Groups can be added/removed freely.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" id="conditions-form">
+        <div id="column-groups">
+            <div class="border p-3 mb-3 column-group" data-index="0">
+                <h5 class="mb-3 text-success">💠 New Column 1</h5>
+                <input type="hidden" name="group_index[]" value="0">
+
+                <div class="row g-2 mb-2">
+                    <div class="col-md-4">
+                        <label>New Column Name:</label>
+                        <input type="text" name="column_name_0" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label>Value if TRUE:</label>
+                        <input type="text" name="value_true_0" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label>Value if FALSE:</label>
+                        <input type="text" name="value_false_0" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="condition-rules">
+                    <div class="row g-2 mb-2 condition-row">
+                        <div class="col-md-3">
+                            <label>Field:</label>
+                            <select name="field_0[]" class="form-select" required>
+                                <option value="">Select</option>
+                                {% for col in columns %}
+                                <option value="{{ col }}">{{ col }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Operator:</label>
+                            <select name="operator_0[]" class="form-select" required>
+                                <option value="==">==</option>
+                                <option value="!=">!=</option>
+                                <option value=">">&gt;</option>
+                                <option value="<">&lt;</option>
+                                <option value=">=">&gt;=</option>
+                                <option value="<=">&lt;=</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label>Value:</label>
+                            <input type="text" name="value_0[]" class="form-control" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Logic:</label>
+                            <select name="logic_0[]" class="form-select">
+                                <option value="(none)">(none)</option>
+                                <option value="AND">AND</option>
+                                <option value="OR">OR</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-primary btn-sm add-rule me-2">➕ Add Rule</button>
+                            <button type="button" class="btn btn-outline-danger btn-sm remove-column">🗑️ Remove Column</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <button type="button" class="btn btn-outline-secondary mb-3" onclick="addCondition()">+ Add Condition</button>
+        <div class="text-end mt-3">
+            <button type="submit" class="btn btn-primary">✅ Apply Logic & Preview</button>
+            <a href="{{ url_for('sample_dataset') }}" class="btn btn-secondary ms-2">⏭️ Skip and Continue</a>
+            <button type="button" class="btn btn-success ms-2" id="add-column">➕ Add New Column</button>
+        </div>
+    </form>
 
-    <div class="mb-2">
-        <label>New Column Name:</label>
-        <input type="text" name="new_col_name" class="form-control" required>
-    </div>
-    <div class="mb-2">
-        <label>Value if condition is met:</label>
-        <input type="text" name="true_value" class="form-control" required>
-    </div>
-    <div class="mb-2">
-        <label>Value if condition is NOT met:</label>
-        <input type="text" name="false_value" class="form-control" required>
-    </div>
-
-    <button type="submit" class="btn btn-success">Generate New Column</button>
-    <a href="/sample" class="btn btn-secondary ms-2">Skip This Step</a>
-</form>
-
-{% if preview %}
+    {% if preview_table %}
     <hr>
-    <h4>Preview of New Column</h4>
-    <div class="table-responsive">{{ preview|safe }}</div>
-    <a href="/sample" class="btn btn-primary mt-3">Next: Sample 20k Rows</a>
-{% endif %}
+    <h5 class="mt-4">📋 Preview of New Columns</h5>
+    <div class="table-responsive mt-2">
+        {{ preview_table|safe }}
+    </div>
+    {% endif %}
+</div>
 
 <script>
-const uniqueValues = {{ unique_values | tojson }};
-const columnTypes = {{ column_types | tojson }};
+let groupIndex = 1;
 
-function updateValues(selectElem) {
-    const selectedCol = selectElem.value;
-    const values = uniqueValues[selectedCol] || [];
-
-    const row = selectElem.closest('.condition-row');
-    const datalist = row.querySelector('.value-datalist');
-    const input = row.querySelector('.value-input');
-
-    datalist.innerHTML = '';
-    input.setAttribute("list", `list-${selectedCol}`);
-    datalist.id = `list-${selectedCol}`;
-
-    values.forEach(val => {
-        const option = document.createElement('option');
-        option.value = val;
-        datalist.appendChild(option);
+document.getElementById('add-column').addEventListener('click', () => {
+    const container = document.getElementById('column-groups');
+    const clone = container.children[0].cloneNode(true);
+    clone.dataset.index = groupIndex;
+    clone.querySelector('h5').innerHTML = `💠 New Column ${groupIndex + 1}`;
+    clone.querySelectorAll('input, select').forEach(el => {
+        if (el.name.includes('group_index')) {
+            el.value = groupIndex;
+        } else {
+            const parts = el.name.split('_');
+            const key = parts[0];
+            el.name = key + '_' + groupIndex + (key === 'field' || key === 'operator' || key === 'value' || key === 'logic' ? '[]' : '');
+            el.value = '';
+        }
     });
-}
+    container.appendChild(clone);
+    groupIndex++;
+});
 
-function updateOperators(selectElem) {
-    const selectedCol = selectElem.value;
-    const type = columnTypes[selectedCol];
-    const operatorSelect = selectElem.closest('.condition-row').querySelector('.operator-select');
-    operatorSelect.innerHTML = '';
-
-    const ops = type === 'numeric'
-        ? ['==', '!=', '>', '<', '>=', '<=']
-        : ['==', '!=', 'contains', 'startswith', 'endswith'];
-
-    ops.forEach(op => {
-        const option = document.createElement('option');
-        option.value = op;
-        option.text = op;
-        operatorSelect.appendChild(option);
-    });
-}
-
-function addCondition() {
-    const original = document.querySelector('.condition-row');
-    const clone = original.cloneNode(true);
-
-    clone.querySelectorAll('select').forEach(sel => {
-        sel.selectedIndex = 0;
-    });
-    clone.querySelector('.value-input').value = '';
-    clone.querySelector('.value-datalist').innerHTML = '';
-
-    const colSelect = clone.querySelector('.col-select');
-    colSelect.onchange = function () {
-        updateOperators(this);
-        updateValues(this);
-    };
-
-    document.getElementById('condition-builder').appendChild(clone);
-    updateOperators(colSelect);
-    updateValues(colSelect);
-}
-
-window.onload = function () {
-    document.querySelectorAll('.col-select').forEach(select => {
-        updateOperators(select);
-        updateValues(select);
-    });
-};
+document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('add-rule')) {
+        const row = e.target.closest('.condition-row');
+        const clone = row.cloneNode(true);
+        clone.querySelectorAll('input, select').forEach(el => el.value = '');
+        row.parentElement.appendChild(clone);
+    } else if (e.target.classList.contains('remove-column')) {
+        const group = e.target.closest('.column-group');
+        if (document.querySelectorAll('.column-group').length > 1) group.remove();
+    }
+});
 </script>
 {% endblock %}

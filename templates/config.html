@@ -1,24 +1,62 @@
-{% if preview_data %}
-<hr>
-<h5>📋 Preview of config.csv</h5>
-<div class="table-responsive">
-    <table class="table table-bordered">
-        <thead>
-            <tr><th>Procedure</th><th>Variable</th></tr>
-        </thead>
-        <tbody>
-            {% for row in preview_data %}
-            <tr>
-                <td>{{ row.analysis }}</td>
-                <td>{{ row.variable }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-3">🛠 SAS Procedure Configuration</h2>
+  <p class="text-muted">Select SAS procedures by category and assign variables.</p>
 
-<form action="{{ url_for('download_config') }}" method="post">
-    <input type="hidden" name="preview_rows" value="{{ preview_data | tojson }}">
-    <button type="submit" class="btn btn-primary mt-3">⬇️ Confirm & Download config.csv</button>
-</form>
-{% endif %}
+  <form method="post" action="/config">
+    <ul class="nav nav-tabs" id="procTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="default-tab" data-bs-toggle="tab" data-bs-target="#default" type="button" role="tab">Default PROCs</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="custom-tab" data-bs-toggle="tab" data-bs-target="#custom" type="button" role="tab">Custom PROC</button>
+      </li>
+    </ul>
+
+    <div class="tab-content p-3 border border-top-0" id="procTabContent">
+      <!-- Default PROC Selection -->
+      <div class="tab-pane fade show active" id="default" role="tabpanel" aria-labelledby="default-tab">
+        {% for category, procs in default_procs.items() %}
+        <div class="mt-4">
+          <h5 class="text-primary">{{ category.replace('_', ' ') }}</h5>
+          {% for proc, description in procs.items() %}
+          <div class="mb-3">
+            <label><strong>{{ proc }}</strong> <span class="text-muted">– {{ description }}</span></label>
+            <select name="variable_{{ proc }}" multiple class="form-select">
+              {% for col in columns %}
+              <option value="{{ col }}">{{ col }}</option>
+              {% endfor %}
+            </select>
+            <input type="hidden" name="procedure" value="{{ proc }}">
+            <input type="hidden" name="custom_proc" value="">
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Custom PROC Entry -->
+      <div class="tab-pane fade" id="custom" role="tabpanel" aria-labelledby="custom-tab">
+        <div class="mb-3">
+          <label for="custom_proc_name">Custom PROC Name</label>
+          <input type="text" class="form-control" name="custom_proc" id="custom_proc_name" placeholder="e.g. PROC NPAR1WAY">
+        </div>
+        <div class="mb-3">
+          <label>Select Variables</label>
+          <select name="custom_variables" multiple class="form-select">
+            {% for col in columns %}
+            <option value="{{ col }}">{{ col }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <input type="hidden" name="procedure" value="">
+      </div>
+    </div>
+
+    <div class="text-end mt-4">
+      <button type="submit" class="btn btn-primary">📥 Generate Config</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

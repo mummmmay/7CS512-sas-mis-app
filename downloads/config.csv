@@ -1,0 +1,4 @@
+analysis,variable
+PROC_FREQ,int_rate
+PROC_LOGISTIC,Active_Loan loan_amnt
+PROC_MEANS,loan_amnt
