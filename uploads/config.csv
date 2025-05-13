@@ -1,0 +1,15 @@
+procedure,variables
+PROC CONTENTS,lead_time
+PROC PRINT,children
+PROC MEANS,children
+PROC FREQ,lead_time
+PROC UNIVARIATE,lead_time
+PROC LOGISTIC,lead_time
+PROC REG,children
+PROC FACTOR,country
+PROC SGPLOT,lead_time
+PROC SGSCATTER,lead_time
+PROC SGPANEL,children
+PROC SQL,lead_time
+PROC SORT,children
+PROC TRANSPOSE,children
