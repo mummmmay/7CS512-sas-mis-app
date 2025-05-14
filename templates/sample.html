@@ -1,36 +1,60 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="container mt-4">
-    <h3 class="mb-3">🎯 Sampled {{ n }} Rows Successfully!</h3>
 
-    <p class="text-muted">Here is a preview of the sampled dataset and summary statistics.</p>
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Home</a></li>
+      <li class="breadcrumb-item"><a href="/conditions">Conditions</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Sample Dataset</li>
+    </ol>
+  </nav>
 
-    <div class="mb-4">
-        <h5>📊 Dataset Summary</h5>
-        <div class="table-responsive">
-            {{ summary|safe }}
-        </div>
+  <h2 class="mb-3">🎯 Sample Dataset</h2>
+  <p class="text-muted">Step 4 of 6 · Create a subset for rapid SAS analysis (up to 20,000 rows).</p>
+
+  <!-- Preview Button -->
+  <form method="POST" class="text-end mb-4">
+    <button class="btn btn-outline-primary" type="submit">🔍 Preview Sample</button>
+  </form>
+
+  {% if n %}
+  <div class="alert alert-success">
+    ✅ Successfully sampled <strong>{{ n }}</strong> rows from your dataset.
+  </div>
+
+  <!-- 3 Button Layout -->
+  <div class="d-flex flex-wrap gap-3 justify-content-start mt-3">
+    <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-outline-primary">
+      ⬇️ Download Sampled Dataset
+    </a>
+    <a href="/config-analysis" class="btn btn-success">
+      📊 Configure SAS Analysis
+    </a>
+    <a href="/config-visual" class="btn btn-info text-black">
+      📈 Configure Visualizations
+    </a>
+  </div>
+  {% endif %}
+
+  {% if summary %}
+  <div class="card mt-4 mb-4">
+    <div class="card-header">📊 Sample Summary (Top 10 Fields)</div>
+    <div class="card-body table-responsive">
+      {{ summary|safe }}
     </div>
+  </div>
+  {% endif %}
 
-    <hr>
-
-    <div class="mb-4">
-        <h5>🔍 Preview of Sampled Rows (First 10)</h5>
-        <div class="table-responsive">
-            {{ preview|safe }}
-        </div>
+  {% if preview %}
+  <div class="card">
+    <div class="card-header">👀 Sample Preview (First 10 Rows)</div>
+    <div class="card-body table-responsive">
+      {{ preview|safe }}
     </div>
+  </div>
+  {% endif %}
 
-    <div class="d-flex flex-wrap gap-3 mt-4">
-        <!-- Download Sampled CSV -->
-        <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-outline-primary">
-            ⬇️ Download Sampled Dataset
-        </a>
-
-        <!-- Continue to PROC Selection (Direct path fallback) -->
-        <a href="/config" class="btn btn-outline-success">
-            ⚙️ Continue to PROC Selection
-        </a>
-    </div>
 </div>
 {% endblock %}

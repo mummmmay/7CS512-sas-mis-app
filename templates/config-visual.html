@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Home</a></li>
+      <li class="breadcrumb-item"><a href="/sample">Sample Dataset</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Configure SAS Analysis</li>
+    </ol>
+  </nav>
+
+  <h2 class="mb-3">⚙️ Configure SAS Procedures</h2>
+  <p class="text-muted">Step 5 of 6 · Choose the appropriate SAS procedures based on your sampled data.</p>
+
+  <ul class="nav nav-tabs" id="procTabs" role="tablist">
+    {% for proc in ['MEANS', 'FREQ', 'LOGISTIC', 'SQL', 'CORR', 'REG', 'UNIVARIATE', 'SGPLOT', 'GLM'] %}
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {% if loop.first %}active{% endif %}" id="{{ proc.lower() }}-tab" data-bs-toggle="tab" data-bs-target="#{{ proc.lower() }}" type="button" role="tab">
+        PROC {{ proc }}
+      </button>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <form method="POST" action="/config-analysis">
+    <div class="tab-content p-4 border border-top-0 bg-white shadow-sm rounded-bottom">
+
+      <!-- GLM Tab -->
+      <div class="tab-pane fade" id="glm" role="tabpanel">
+        <h5 class="text-danger">📊 PROC GLM <span class="badge bg-light text-dark">General Linear Model</span></h5>
+        <p>Used for ANOVA, regression, and interaction modeling.</p>
+        <div class="mb-2">
+          <label>Target (dependent variable):</label>
+          <select class="form-select" name="glm_target">
+            {% for col in numeric_columns %}
+              <option value="{{ col }}">{{ col }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-2">
+          <label>Predictor variables (independent):</label>
+          <select class="form-select" name="glm_predictors" multiple>
+            {% for col in df.columns %}
+              <option value="{{ col }}">{{ col }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="mt-4 text-end">
+      <button type="submit" class="btn btn-primary">
+        💾 Save Configuration and Continue
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,41 +1,61 @@
 {% extends "layout.html" %}
 {% block content %}
-<h3>Select Columns to Include</h3>
+<div class="container mt-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Home</a></li>
+      <li class="breadcrumb-item"><a href="/upload">Upload</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Select Columns</li>
+    </ol>
+  </nav>
 
-<!-- Buttons to select/deselect all -->
-<div class="mb-3">
-    <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAll()">Select All</button>
-    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAll()">Deselect All</button>
-</div>
+  <div class="card shadow-sm card-hover">
+    <div class="card-body">
+      <h3 class="mb-3">🧮 Select Columns to Include</h3>
+      <p class="text-muted">Step 2 of 5 · Tick the fields you want to retain for your dataset.</p>
 
-<form method="POST">
-    <table class="table table-bordered">
-        <thead>
-            <tr>
+      <!-- Buttons to select/deselect all -->
+      <div class="mb-3 d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAll()">✔️ Select All</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAll()">❌ Deselect All</button>
+      </div>
+
+      <form method="POST">
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover align-middle text-center">
+            <thead class="table-light">
+              <tr>
                 <th>Select</th>
                 <th>Column Name</th>
                 <th>Data Type</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for col in columns %}
-            <tr>
-                <td><input type="checkbox" class="col-checkbox" name="columns" value="{{ col.name }}" checked></td>
+              </tr>
+            </thead>
+            <tbody>
+              {% for col in columns %}
+              <tr>
+                <td><input type="checkbox" class="col-checkbox form-check-input" name="columns" value="{{ col.name }}" checked></td>
                 <td>{{ col.name }}</td>
-                <td>{{ col.dtype }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <button class="btn btn-success mt-2" type="submit">Next: Add Conditional Columns</button>
-</form>
+                <td><span class="badge bg-info text-dark">{{ col.dtype }}</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="text-end mt-3">
+          <button class="btn btn-success" type="submit">➡️ Next: Add Conditional Columns</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <script>
 function selectAll() {
-    document.querySelectorAll('.col-checkbox').forEach(cb => cb.checked = true);
+  document.querySelectorAll('.col-checkbox').forEach(cb => cb.checked = true);
 }
 function deselectAll() {
-    document.querySelectorAll('.col-checkbox').forEach(cb => cb.checked = false);
+  document.querySelectorAll('.col-checkbox').forEach(cb => cb.checked = false);
 }
 </script>
 {% endblock %}

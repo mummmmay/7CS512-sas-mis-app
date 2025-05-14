@@ -1,53 +1,86 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="container mt-5">
-  <h2 class="mb-4">📘 SAS-Based MIS Project Walkthrough</h2>
-  <p class="lead text-muted">An end-to-end business analytics system developed for 7CS512 coursework using Flask, SAS, and Python.</p>
+<div class="container mt-4">
 
-  <hr class="mb-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">🏠 Home</a></li>
+      <li class="breadcrumb-item active" aria-current="page">📘 Walkthrough</li>
+    </ol>
+  </nav>
 
-  <!-- Overview -->
-  <h4>🎯 Project Overview</h4>
-  <p>This project is a SAS-based Management Information System (MIS) that enables users to process and prepare structured datasets for analytics and advanced statistical procedures using SAS. It was developed to simplify the workflow of column selection, condition building, data sampling, and SAS procedure configuration — all within an interactive web interface.</p>
+  <h2 class="mb-4">🧭 SAS MIS Project Walkthrough</h2>
+  <p class="text-muted mb-5">A step-by-step overview of your SAS-based data workflow with visual and analytic configuration.</p>
 
-  <!-- Goals -->
-  <h4 class="mt-4">🧭 Objectives</h4>
-  <ul>
-    <li>Allow users to upload raw datasets (CSV, Excel, or SAS format)</li>
-    <li>Enable column filtering and variable selection</li>
-    <li>Support the creation of new columns based on conditional logic</li>
-    <li>Generate a sample dataset for SAS modeling</li>
-    <li>Export a configurable <code>config.csv</code> for automated SAS procedures</li>
-  </ul>
+  <div class="row g-4">
 
-  <!-- Stack -->
-  <h4 class="mt-4">🛠 Tech Stack</h4>
-  <ul>
-    <li><strong>Python + Flask</strong> — Web framework</li>
-    <li><strong>Pandas</strong> — Data manipulation</li>
-    <li><strong>SAS OnDemand for Academics</strong> — Statistical analytics backend</li>
-    <li><strong>Bootstrap 5</strong> — Styling and responsive UI</li>
-  </ul>
+    <!-- Step 1 -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">📤 Step 1: Upload Dataset</h5>
+          <p class="card-text">Upload a <code>.csv</code>, <code>.xlsx</code>, or <code>.sas7bdat</code> file to preview its structure and begin analysis.</p>
+          <span class="badge bg-primary">Input</span> <code>uploaded_data.pkl</code>
+        </div>
+      </div>
+    </div>
 
-  <!-- Step-by-Step -->
-  <h4 class="mt-4">📌 Step-by-Step Workflow</h4>
-  <ol class="mb-4">
-    <li><strong>Upload Dataset:</strong> Users can upload CSV, XLSX, or SAS7BDAT files</li>
-    <li><strong>Column Selection:</strong> Filter only the relevant fields to keep</li>
-    <li><strong>Conditional Logic Builder:</strong> Create new columns based on multi-step conditions</li>
-    <li><strong>Sampling:</strong> Generate a clean 20,000-row sample dataset</li>
-    <li><strong>SAS Config Generator:</strong> Dynamically build a <code>config.csv</code> with PROC and variable mapping</li>
-  </ol>
+    <!-- Step 2 -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">🧮 Step 2: Select Columns</h5>
+          <p class="card-text">Manually filter your dataset by selecting only the columns relevant to your analysis.</p>
+          <span class="badge bg-warning text-dark">Transform</span> <code>filtered_data.pkl</code>
+        </div>
+      </div>
+    </div>
 
-  <!-- Acknowledgment -->
-  <h4 class="mt-4">🎓 Acknowledgment</h4>
-  <p>Special thanks to <strong>Professor Alexander Rompas</strong> for the guidance, expectations, and energy that fueled this project. Your passion for analytics challenged us to build something practical, structured, and scalable.</p>
+    <!-- Step 3 -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">🧠 Step 3: Conditional Columns</h5>
+          <p class="card-text">Add derived columns using logical conditions based on existing data fields.</p>
+          <span class="badge bg-info text-dark">Logic</span> <code>conditioned_data.pkl</code>
+        </div>
+      </div>
+    </div>
 
-  <!-- CTA -->
-  <div class="text-center mt-5">
-    <a href="/upload" class="btn btn-primary btn-lg px-4 shadow">
-      🚀 Try the SAS MIS App Now
-    </a>
+    <!-- Step 4 -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">🎯 Step 4: Sample Dataset</h5>
+          <p class="card-text">Generate a 20,000-row sample for rapid analysis and export to CSV.</p>
+          <span class="badge bg-success">Output</span> <code>dataset_sampling.csv</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">📊 Step 5: Configure SAS Analysis</h5>
+          <p class="card-text">Choose analytical PROCs like <code>MEANS</code>, <code>REG</code>, <code>LOGISTIC</code> and assign variables to each.</p>
+          <span class="badge bg-secondary">Config</span> <code>config_analysis.csv</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 6 -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">📈 Step 6: Configure Visualizations</h5>
+          <p class="card-text">Assign roles like x-axis, y-axis, and group to SAS visual PROCs (e.g. <code>SGPLOT</code>, <code>GCHART</code>).</p>
+          <span class="badge bg-dark">Output</span> <code>config_visual.csv</code>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 {% endblock %}
