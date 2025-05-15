@@ -234,6 +234,11 @@
     </div>
   </form>
 
+  <br>
+  <br>
+  <input type="email" name="email_recipient" class="form-control" placeholder="Enter your email for report delivery" required>
+  
+
   {% if preview_gallery %}
   <div class="mt-4">
     <h5>🖼️ Preview of Visual Config</h5>
@@ -398,5 +403,13 @@ function drawLogisticChart(proc) {
   });
 }
 </script>
+
+<script>
+document.getElementById("downloadAll").addEventListener("click", function () {
+  window.location.href = "/download-all";
+});
+</script>
+
 </div>
+
 {% endblock %}

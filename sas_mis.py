@@ -17,6 +17,7 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['DOWNLOAD_FOLDER'] = 'downloads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
+os.environ["EMAIL_RECIPIENT"] = form.get('email_recipient')
 
 @app.context_processor
 def inject_now():
@@ -352,6 +353,7 @@ def save_visual_config():
 def config_visual():
     import csv
     sampled_path = os.path.join(app.config['UPLOAD_FOLDER'], 'sampled_data.pkl')
+    session['email_recipient'] = request.form.get('email_recipient', '')
     if not os.path.exists(sampled_path):
         flash("⚠️ Please sample the dataset first.", "warning")
         return redirect('/sample')
@@ -414,37 +416,35 @@ def config_visual():
 
     return render_template('config-visual.html', numeric_columns=numeric_columns, categorical_columns=categorical_columns)
 
-
 @app.route('/walkthrough')
 def walkthrough():
     return render_template('walkthrough.html')
 
+from zipfile import ZipFile
+
 @app.route('/download-all')
-def download_all():
-    files_to_zip = [
-        'dataset_sampling.csv',
-        'config_analysis.csv',
-        'config_visual.csv',
-        'analysis_report.html',
-        'analysis_report.pdf',
-        'analysis_report.xlsx'
-    ]
+def download_all_files():
+    zip_filename = "sas_output_bundle.zip"
+    zip_path = os.path.join(app.config['DOWNLOAD_FOLDER'], zip_filename)
 
-    memory_file = io.BytesIO()
+    # Clean old ZIP file if exists
+    if os.path.exists(zip_path):
+        os.remove(zip_path)
 
-    with ZipFile(memory_file, 'w') as zipf:
-        for filename in files_to_zip:
-            full_path = os.path.join(app.config['DOWNLOAD_FOLDER'], filename)
-            if os.path.exists(full_path):
-                zipf.write(full_path, arcname=filename)
+    # Paths to target files
+    files_to_include = {
+        "sampled_data.csv": os.path.join(app.config['UPLOAD_FOLDER'], "sampled_data.csv"),
+        "config_analysis.csv": os.path.join(app.config['DOWNLOAD_FOLDER'], "config_analysis.csv"),
+        "config_visual.csv": os.path.join(app.config['DOWNLOAD_FOLDER'], "config_visual.csv"),
+    }
 
-    memory_file.seek(0)
-    return send_file(
-        memory_file,
-        mimetype='application/zip',
-        as_attachment=True,
-        download_name='7CS512_MIS.zip'
-    )
+    # Create new ZIP
+    with ZipFile(zip_path, 'w') as zipf:
+        for filename, fullpath in files_to_include.items():
+            if os.path.exists(fullpath):
+                zipf.write(fullpath, arcname=filename)
+
+    return send_from_directory(app.config['DOWNLOAD_FOLDER'], zip_filename, as_attachment=True)
 
 if __name__ == "__main__":
     app.run(debug=True)
