@@ -1,143 +1,236 @@
-
 {% extends "layout.html" %}
 {% block content %}
 <div class="container mt-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Home</a></li>
+      <li class="breadcrumb-item"><a href="/sample">Sample Dataset</a></li>
+      <li class="breadcrumb-item"><a href="/config-analysis">Configure Analysis</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Configure Visuals</li>
+    </ol>
+  </nav>
 
   <h2 class="mb-3">📈 Configure Visuals for SAS Output</h2>
-  <form method="POST" action="/config-visual">
-    <ul class="nav nav-tabs" id="procTabs" role="tablist">
-      {% for proc in ['MEANS', 'FREQ', 'CORR', 'REG', 'UNIVARIATE', 'SGPLOT', 'GLM', 'ARIMA', 'CLUSTER', 'HPFOREST'] %}
-      <li class="nav-item" role="presentation">
-        <button class="nav-link {% if loop.first %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#{{ proc.lower() }}" type="button" role="tab">
-          {{ proc }}
-        </button>
-      </li>
-      {% endfor %}
-    </ul>
 
-    <div class="tab-content border p-4 bg-white rounded-bottom">
-
-      <!-- MEANS -->
-      <div class="tab-pane fade show active" id="means" role="tabpanel">
-        <label class="form-label">PROC MEANS</label>
-        <select name="means_visual_columns" class="form-select" multiple>
-          {% for col in numeric_columns %}
-          <option value="{{ col }}" {% if 'MEANS' in selected and col in selected['MEANS'] %}selected{% endif %}>{{ col }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <!-- FREQ -->
-      <div class="tab-pane fade" id="freq" role="tabpanel">
-        <label class="form-label">PROC FREQ</label>
-        <select name="freq_visual_columns" class="form-select" multiple>
-          {% for col in categorical_columns %}
-          <option value="{{ col }}" {% if 'FREQ' in selected and col in selected['FREQ'] %}selected{% endif %}>{{ col }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <!-- CORR -->
-      <div class="tab-pane fade" id="corr" role="tabpanel">
-        <label class="form-label">PROC CORR</label>
-        <select name="corr_visual_columns" class="form-select" multiple>
-          {% for col in numeric_columns %}
-          <option value="{{ col }}" {% if 'CORR' in selected and col in selected['CORR'] %}selected{% endif %}>{{ col }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <!-- REG -->
-      <div class="tab-pane fade" id="reg" role="tabpanel">
-        <label class="form-label">PROC REG</label>
-        <select name="reg_x" class="form-select mb-2">
-          <option value="">X-Axis</option>
-          {% for col in numeric_columns %}
-          <option value="{{ col }}" {% if 'REG' in selected and col == selected['REG'][0] %}selected{% endif %}>{{ col }}</option>
-          {% endfor %}
-        </select>
-        <select name="reg_y" class="form-select">
-          <option value="">Y-Axis</option>
-          {% for col in numeric_columns %}
-          <option value="{{ col }}" {% if 'REG' in selected and col == selected['REG'][1] %}selected{% endif %}>{{ col }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <!-- UNIVARIATE -->
-      <div class="tab-pane fade" id="univariate" role="tabpanel">
-        <label class="form-label">PROC UNIVARIATE</label>
-        <select name="univariate_visual_columns" class="form-select" multiple>
-          {% for col in numeric_columns %}
-          <option value="{{ col }}" {% if 'UNIVARIATE' in selected and col in selected['UNIVARIATE'] %}selected{% endif %}>{{ col }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <!-- SGPLOT -->
-      <div class="tab-pane fade" id="sgplot" role="tabpanel">
-        <label class="form-label">PROC SGPLOT</label>
-        <select name="sgplot_x" class="form-select mb-2">
-          <option value="">X-Axis</option>
-          {% for col in numeric_columns + categorical_columns %}
-          <option value="{{ col }}" {% if 'SGPLOT' in selected and col == selected['SGPLOT'][0] %}selected{% endif %}>{{ col }}</option>
-          {% endfor %}
-        </select>
-        <select name="sgplot_y" class="form-select">
-          <option value="">Y-Axis</option>
-          {% for col in numeric_columns %}
-          <option value="{{ col }}" {% if 'SGPLOT' in selected and col == selected['SGPLOT'][1] %}selected{% endif %}>{{ col }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <!-- GLM -->
-      <div class="tab-pane fade" id="glm" role="tabpanel">
-        <label class="form-label">PROC GLM</label>
-        <select name="glm_visual_option" class="form-select">
-          <option value="">Select Visual</option>
-          <option value="main_effect" {% if 'GLM' in selected and 'main_effect' in selected['GLM'] %}selected{% endif %}>Main Effect</option>
-          <option value="interaction" {% if 'GLM' in selected and 'interaction' in selected['GLM'] %}selected{% endif %}>Interaction</option>
-        </select>
-      </div>
-
-      <!-- ARIMA -->
-      <div class="tab-pane fade" id="arima" role="tabpanel">
-        <label class="form-label">PROC ARIMA</label>
-        <select name="arima_visual" class="form-select">
-          <option value="">Select Forecast Target</option>
-          {% for col in numeric_columns %}
-          <option value="{{ col }}" {% if 'ARIMA' in selected and col in selected['ARIMA'] %}selected{% endif %}>{{ col }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <!-- CLUSTER -->
-      <div class="tab-pane fade" id="cluster" role="tabpanel">
-        <label class="form-label">PROC CLUSTER</label>
-        <select name="cluster_visual" class="form-select">
-          <option value="">Select Cluster Column</option>
-          {% for col in numeric_columns %}
-          <option value="{{ col }}" {% if 'CLUSTER' in selected and col in selected['CLUSTER'] %}selected{% endif %}>{{ col }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <!-- HPFOREST -->
-      <div class="tab-pane fade" id="hpforest" role="tabpanel">
-        <label class="form-label">PROC HPFOREST</label>
-        <select name="hpforest_visual" class="form-select">
-          <option value="">Select Option</option>
-          <option value="prediction_accuracy" {% if 'HPFOREST' in selected and 'prediction_accuracy' in selected['HPFOREST'] %}selected{% endif %}>Prediction Accuracy</option>
-          <option value="variable_importance" {% if 'HPFOREST' in selected and 'variable_importance' in selected['HPFOREST'] %}selected{% endif %}>Variable Importance</option>
-        </select>
-      </div>
-
+  <!-- START: Full PROC Visual Config Cards -->
+<!-- Example for PROC MEANS -->
+<div class="card mb-4">
+  <div class="card-header fw-bold">PROC MEANS</div>
+  <div class="card-body">
+    <label for="means_column">Select Numeric Columns</label>
+<select name="means_column" id="means_column" class="form-select" multiple onchange="drawBarChart('means')">
+  {% for col in numeric_columns %}<option value="{{ col }}">{{ col }}</option>{% endfor %}
+</select>
+    <div class="d-flex align-items-center gap-3 mt-2">
+  <div class="form-check form-switch">
+    <input class="form-check-input" type="checkbox" id="meansHorizontal" onchange="drawBarChart('means')">
+    <label class="form-check-label" for="meansHorizontal">Horizontal</label>
+  </div>
+  <div>
+    <select id="meansChartType" class="form-select form-select-sm" style="width:auto;" onchange="drawBarChart('means')">
+      <option value="bar">Bar</option>
+      <option value="line">Line</option>
+    </select>
+  </div>
+</div>
+    <small id="meansHint" class="text-muted d-block mt-1">🛈 Select a column to visualize mean values.</small>
+    <canvas id="means-chart" height="200" class="mt-3"></canvas>
+  </div>
+</div>
+<!-- FREQ -->
+<div class="card mb-4">
+  <div class="card-header fw-bold">PROC FREQ</div>
+  <div class="card-body">
+    <label for="freq_column">Select Categorical Column</label>
+    <select name="freq_column" id="freq_column" class="form-select" multiple onchange="drawBarChart('freq')">
+  {% for col in categorical_columns %}<option value="{{ col }}">{{ col }}</option>{% endfor %}
+</select>
+    <div class="form-check form-switch mt-2">
+      <input class="form-check-input" type="checkbox" id="freqHorizontal" onchange="drawBarChart('freq')">
+      <label class="form-check-label" for="freqHorizontal">Horizontal Bar</label>
     </div>
+    <small id="freqHint" class="text-muted d-block mt-1">🛈 Select a column to visualize frequencies.</small>
+    <canvas id="freq-chart" height="200" class="mt-3"></canvas>
+  </div>
+</div>
 
-    <div class="mt-4 d-flex justify-content-end gap-3">
+<!-- CORR -->
+<div class="card mb-4">
+  <div class="card-header fw-bold">PROC CORR</div>
+  <div class="card-body">
+    <label>Select Two Numeric Columns</label>
+    <div class="row g-2">
+      <div class="col-md-6">
+        <select name="corr_x" id="corrX" class="form-select" onchange="drawLineChart('corr')">
+          <option value="">X Variable</option>
+          {% for col in numeric_columns %}<option value="{{ col }}">{{ col }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <select name="corr_y" id="corrY" class="form-select" onchange="drawLineChart('corr')">
+          <option value="">Y Variable</option>
+          {% for col in numeric_columns %}<option value="{{ col }}">{{ col }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <small id="corrHint" class="text-muted d-block mt-1">🛈 Select two columns to view correlation preview.</small>
+    <canvas id="corr-chart" height="200" class="mt-3"></canvas>
+  </div>
+</div>
+
+<!-- UNIVARIATE -->
+<div class="card mb-4">
+  <div class="card-header fw-bold">PROC UNIVARIATE</div>
+  <div class="card-body">
+    <label for="univariate_column">Select Numeric Column</label>
+    <select name="univariate_column" id="univariate_column" class="form-select" onchange="drawHistogram('univariate')">
+      {% for col in numeric_columns %}<option value="{{ col }}">{{ col }}</option>{% endfor %}
+    </select>
+    <div class="d-flex align-items-center gap-3 mt-2">
+  <div class="form-check form-switch">
+    <input class="form-check-input" type="checkbox" id="univariateHorizontal" onchange="drawHistogram('univariate')">
+    <label class="form-check-label" for="univariateHorizontal">Horizontal</label>
+  </div>
+  <div>
+    <select id="univariateChartType" class="form-select form-select-sm" style="width:auto;" onchange="drawHistogram('univariate')">
+      <option value="bar">Bar</option>
+      <option value="line">Line</option>
+    </select>
+  </div>
+</div>
+<small id="univariateHint" class="text-muted d-block mt-1">🛈 Select a column to view histogram preview.</small>
+    <canvas id="univariate-chart" height="200" class="mt-3"></canvas>
+  </div>
+</div>
+
+<!-- SGPLOT -->
+<div class="card mb-4">
+  <div class="card-header fw-bold">PROC SGPLOT</div>
+  <div class="card-body">
+    <label>Select X and Y Variables</label>
+    <div class="row g-2">
+      <div class="col-md-6">
+        <select name="sgplot_x" id="sgplotX" class="form-select" onchange="drawScatterPlot('sgplot')">
+          <option value="">X Variable</option>
+          {% for col in numeric_columns + categorical_columns %}<option value="{{ col }}">{{ col }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <select name="sgplot_y" id="sgplotY" class="form-select" onchange="drawScatterPlot('sgplot')">
+          <option value="">Y Variable</option>
+          {% for col in numeric_columns %}<option value="{{ col }}">{{ col }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <small id="sgplotHint" class="text-muted d-block mt-1">🛈 Select X and Y columns to preview scatter plot.</small>
+    <canvas id="sgplot-chart" height="200" class="mt-3"></canvas>
+  </div>
+</div>
+
+<!-- GLM -->
+<div class="card mb-4">
+  <div class="card-header fw-bold">PROC GLM</div>
+  <div class="card-body">
+    <label>Select Effect Type</label>
+    <select name="glm_effect" id="glmEffect" class="form-select" onchange="drawEffectChart('glm')">
+      <option value="">Select Effect</option>
+      <option value="main">Main Effect</option>
+      <option value="interaction">Interaction</option>
+    </select>
+    <small id="glmHint" class="text-muted d-block mt-1">🛈 Select an effect type to visualize.</small>
+    <canvas id="glm-chart" height="200" class="mt-3"></canvas>
+  </div>
+</div>
+
+<!-- ARIMA -->
+<div class="card mb-4">
+  <div class="card-header fw-bold">PROC ARIMA</div>
+  <div class="card-body">
+    <label>Select Time Series Column</label>
+    <select name="arima_column" id="arimaColumn" class="form-select" onchange="drawForecastChart('arima')">
+      <option value="">Select Variable</option>
+      {% for col in numeric_columns %}<option value="{{ col }}">{{ col }}</option>{% endfor %}
+    </select>
+    <small id="arimaHint" class="text-muted d-block mt-1">🛈 Select a numeric column to simulate time series forecast.</small>
+    <canvas id="arima-chart" height="200" class="mt-3"></canvas>
+  </div>
+</div>
+
+<!-- CLUSTER -->
+<div class="card mb-4">
+  <div class="card-header fw-bold">PROC CLUSTER</div>
+  <div class="card-body">
+    <label for="clusterColumn">Select Numeric Column(s)</label>
+    <select name="cluster_column" id="clusterColumn" class="form-select" multiple onchange="drawBarChart('cluster')">
+      {% for col in numeric_columns %}<option value="{{ col }}">{{ col }}</option>{% endfor %}
+    </select>
+    <div class="d-flex align-items-center gap-3 mt-2">
+  <div class="form-check form-switch">
+    <input class="form-check-input" type="checkbox" id="clusterHorizontal" onchange="drawBarChart('cluster')">
+    <label class="form-check-label" for="clusterHorizontal">Horizontal</label>
+  </div>
+  <div>
+    <select id="clusterChartType" class="form-select form-select-sm" style="width:auto;" onchange="drawBarChart('cluster')">
+      <option value="bar">Bar</option>
+      <option value="line">Line</option>
+    </select>
+  </div>
+</div>
+<small id="clusterHint" class="text-muted d-block mt-1">🛈 Simulated clustering based on selected numeric column.</small>
+    <canvas id="cluster-chart" height="200" class="mt-3"></canvas>
+  </div>
+</div>
+
+<!-- HPFOREST -->
+<div class="card mb-4">
+  <div class="card-header fw-bold">PROC HPFOREST</div>
+  <div class="card-body">
+    <label>Select Visual Option</label>
+    <select name="hpforest_option" id="hpforestOption" class="form-select" onchange="drawForestChart('hpforest')">
+      <option value="">Select Option</option>
+      <option value="accuracy">Prediction Accuracy</option>
+      <option value="importance">Variable Importance</option>
+    </select>
+    <small id="hpforestHint" class="text-muted d-block mt-1">🛈 Choose a forest metric to preview.</small>
+    <canvas id="hpforest-chart" height="200" class="mt-3"></canvas>
+  </div>
+</div>
+
+<!-- LOGISTIC REGRESSION -->
+<div class="card mb-4">
+  <div class="card-header fw-bold">PROC LOGISTIC REGRESSION</div>
+  <div class="card-body">
+    <label>Select Target and Predictor</label>
+    <div class="row g-2">
+      <div class="col-md-6">
+        <select name="logistic_target" id="logisticTarget" class="form-select" onchange="drawLogisticChart('logistic')">
+          <option value="">Target Column</option>
+          {% for col in categorical_columns %}<option value="{{ col }}">{{ col }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <select name="logistic_predictor" id="logisticPredictor" class="form-select" onchange="drawLogisticChart('logistic')">
+          <option value="">Predictor Column</option>
+          {% for col in numeric_columns %}<option value="{{ col }}">{{ col }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <small id="logisticHint" class="text-muted d-block mt-1">🛈 Shows predicted probability curve based on logistic regression.</small>
+    <canvas id="logistic-chart" height="200" class="mt-3"></canvas>
+  </div>
+</div>
+<!-- END: Full PROC Visual Config Cards -->
+
+  <!-- Submit & Download -->
+  <form method="POST" action="/config-visual" onsubmit="prepareChartTypeInputs()">
+  <input type="hidden" name="means_chart_type" id="means_chart_type">
+  <input type="hidden" name="freq_chart_type" id="freq_chart_type">
+  <input type="hidden" name="cluster_chart_type" id="cluster_chart_type">
+  <input type="hidden" name="univariate_chart_type" id="univariate_chart_type">
+    <div class="mt-4 d-flex flex-wrap justify-content-end gap-3">
       <button type="submit" class="btn btn-success">💾 Save Visual Config</button>
       <button id="downloadVisual" type="button" class="btn btn-outline-info">⬇️ Download config_visual.csv</button>
+      <button id="downloadAll" type="button" class="btn btn-outline-success">📦 Download All Files</button>
     </div>
   </form>
 
@@ -148,22 +241,162 @@
   </div>
   {% endif %}
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js">function prepareChartTypeInputs() {
+  const chartTypes = ['means', 'freq', 'cluster', 'univariate'];
+  chartTypes.forEach(proc => {
+    const selected = document.getElementById(`${proc}ChartType`)?.value || 'bar';
+    const hiddenInput = document.getElementById(`${proc}_chart_type`);
+    if (hiddenInput) hiddenInput.value = selected;
+  });
+}
+</script>
   <script>
-  document.getElementById("downloadVisual").addEventListener("click", async function () {
-    const button = this;
-    button.disabled = true;
-    button.innerText = "⏳ Saving...";
-    try {
-      const response = await fetch("/save-visual-config", { method: "POST" });
-      if (!response.ok) throw new Error("Failed to save");
-      window.location.href = "/download/config_visual.csv";
-    } catch (err) {
-      alert("❌ Failed to save visual configuration.");
-    } finally {
-      button.disabled = false;
-      button.innerText = "⬇️ Download config_visual.csv";
+// Full JavaScript logic for all PROC visualizations
+
+function drawBarChart(proc) {
+  const canvasId = `${proc}-chart`;
+  const ctx = document.getElementById(canvasId).getContext("2d");
+  const select = document.getElementById(`${proc}_column`) || 
+                document.getElementById(`${proc}Column`) || 
+                document.getElementById(`${proc}Option`);
+  const selected = Array.from(select?.selectedOptions || []).map(opt => opt.value);
+  const isHorizontal = document.getElementById(`${proc}Horizontal`)?.checked;
+  const hint = document.getElementById(`${proc}Hint`);
+  if (!selected.length) return;
+  hint.textContent = `📊 Showing chart for: ${selected.join(', ')}`;
+  if (window[`${proc}Chart`]) window[`${proc}Chart`].destroy();
+  const labels = ['A', 'B', 'C', 'D'];
+  const datasets = selected.map((col, i) => ({
+    label: col,
+    data: [Math.floor(Math.random()*10)+1, Math.floor(Math.random()*10)+1, Math.floor(Math.random()*10)+1, Math.floor(Math.random()*10)+1],
+    backgroundColor: `hsl(${i*60},70%,60%)`
+  }));
+  const chartType = document.getElementById(`${proc}ChartType`)?.value || 'bar';
+  window[`${proc}Chart`] = new Chart(ctx, {
+    type: chartType,
+    data: {
+      labels: labels,
+      datasets: datasets
+    },
+    options: {
+      indexAxis: isHorizontal ? 'y' : 'x',
+      responsive: true,
+      plugins: { legend: { position: 'top' } }
     }
   });
-  </script>
+}
+
+function drawLineChart(proc) {
+  const ctx = document.getElementById(`${proc}-chart`).getContext("2d");
+  const x = document.getElementById("corrX").value;
+  const y = document.getElementById("corrY").value;
+  const hint = document.getElementById(`${proc}Hint`);
+  if (!x || !y) return;
+  hint.textContent = `📈 Correlation between ${x} and ${y}`;
+  if (window[`${proc}Chart`]) window[`${proc}Chart`].destroy();
+  window[`${proc}Chart`] = new Chart(ctx, {
+    type: 'line',
+    data: { labels: ['A', 'B', 'C'], datasets: [{ label: `${x} vs ${y}`, data: [2, 4, 3] }] },
+    options: { responsive: true }
+  });
+}
+
+function drawHistogram(proc) {
+  const ctx = document.getElementById(`${proc}-chart`).getContext("2d");
+  const col = document.getElementById("univariate_column").value;
+  const hint = document.getElementById(`${proc}Hint`);
+  if (!col) return;
+  hint.textContent = `📊 Histogram of ${col}`;
+  if (window[`${proc}Chart`]) window[`${proc}Chart`].destroy();
+  window[`${proc}Chart`] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: ['0-10', '10-20', '20-30'], datasets: [{ label: col, data: [5, 8, 4] }] },
+    options: { responsive: true }
+  });
+}
+
+function drawScatterPlot(proc) {
+  const ctx = document.getElementById(`${proc}-chart`).getContext("2d");
+  const x = document.getElementById("sgplotX").value;
+  const y = document.getElementById("sgplotY").value;
+  const hint = document.getElementById(`${proc}Hint`);
+  if (!x || !y) return;
+  hint.textContent = `🔬 Scatter Plot: ${x} vs ${y}`;
+  if (window[`${proc}Chart`]) window[`${proc}Chart`].destroy();
+  window[`${proc}Chart`] = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{ label: `${x} vs ${y}`, data: [{x: 1, y: 2}, {x: 2, y: 4}, {x: 3, y: 3}], backgroundColor: '#dc3545' }]
+    },
+    options: { responsive: true }
+  });
+}
+
+function drawEffectChart(proc) {
+  const ctx = document.getElementById(`${proc}-chart`).getContext("2d");
+  const type = document.getElementById("glmEffect").value;
+  const hint = document.getElementById(`${proc}Hint`);
+  if (!type) return;
+  hint.textContent = `🧪 Showing ${type} effect`;
+  if (window[`${proc}Chart`]) window[`${proc}Chart`].destroy();
+  window[`${proc}Chart`] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: ['Factor A', 'Factor B'], datasets: [{ label: 'Effect', data: [8, 6] }] },
+    options: { responsive: true }
+  });
+}
+
+function drawForecastChart(proc) {
+  const ctx = document.getElementById(`${proc}-chart`).getContext("2d");
+  const col = document.getElementById("arimaColumn").value;
+  const hint = document.getElementById(`${proc}Hint`);
+  if (!col) return;
+  hint.textContent = `📈 Forecast for ${col}`;
+  if (window[`${proc}Chart`]) window[`${proc}Chart`].destroy();
+  window[`${proc}Chart`] = new Chart(ctx, {
+    type: 'line',
+    data: { labels: ['T1', 'T2', 'T3'], datasets: [{ label: col, data: [12, 15, 20] }] },
+    options: { responsive: true }
+  });
+}
+
+
+
+function drawForestChart(proc) {
+  const ctx = document.getElementById(`${proc}-chart`).getContext("2d");
+  const select = document.getElementById("hpforestOption");
+  const selected = Array.from(select?.selectedOptions || []).map(opt => opt.value);
+  const hint = document.getElementById(`${proc}Hint`);
+  if (!selected.length) return;
+  hint.textContent = `🌲 Showing forest metrics: ${selected.join(', ')}`;
+  if (window[`${proc}Chart`]) window[`${proc}Chart`].destroy();
+  const labels = selected;
+  const datasets = [{
+    label: 'Metric Value',
+    data: selected.map(() => Math.floor(Math.random() * 20 + 5)),
+    backgroundColor: selected.map((_, i) => `hsl(${i*45}, 70%, 60%)`)
+  }];
+  window[`${proc}Chart`] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label: opt, data }] },
+    options: { responsive: true }
+  });
+}
+
+function drawLogisticChart(proc) {
+  const ctx = document.getElementById(`${proc}-chart`).getContext("2d");
+  const target = document.getElementById("logisticTarget").value;
+  const predictor = document.getElementById("logisticPredictor").value;
+  const hint = document.getElementById(`${proc}Hint`);
+  if (!target || !predictor) return;
+  hint.textContent = `📉 Logistic curve for ${predictor} predicting ${target}`;
+  if (window[`${proc}Chart`]) window[`${proc}Chart`].destroy();
+  window[`${proc}Chart`] = new Chart(ctx, {
+    type: 'line',
+    data: { labels: [1, 2, 3, 4, 5], datasets: [{ label: 'Probability', data: [0.1, 0.4, 0.7, 0.9, 0.95] }] },
+    options: { responsive: true }
+  });
+}
+</script>
 </div>
 {% endblock %}

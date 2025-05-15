@@ -199,7 +199,6 @@
       </div>
 
     </div>
-
     
     <div class="mt-4 d-flex justify-content-between align-items-center">
       <a href="/config-visual" class="btn btn-outline-secondary">➡️ Go to Visual Config</a>
@@ -209,10 +208,16 @@
     </div>
   </form>
 
-  {% if preview_table %}
+  {% if preview_html %}
+  <div class="alert alert-success mt-4">
+    ✅ Your analysis configuration has been saved successfully!
+  </div>
+
   <div class="mt-4">
     <h5>🧾 Preview of Saved PROC Configuration</h5>
-    {{ preview_table|safe }}
+    <div class="table-responsive">
+      {{ preview_html|safe }}
+    </div>
   </div>
   {% endif %}
 
