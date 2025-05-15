@@ -364,28 +364,26 @@ def config_visual():
         form = request.form
         config = []
 
-        # Multi-select columns
         for col in form.getlist('means_column'):
             config.append({'proc': 'MEANS', 'column': col, 'chart_type': form.get('means_chart_type', 'bar')})
 
         for col in form.getlist('freq_column'):
             config.append({'proc': 'FREQ', 'column': col, 'chart_type': form.get('freq_chart_type', 'bar')})
 
-        for col in form.getlist('cluster_column'):
-            config.append({'proc': 'CLUSTER', 'column': col, 'chart_type': form.get('cluster_chart_type', 'bar')})
-
-        for col in form.getlist('hpforest_option'):
-            config.append({'proc': 'HPFOREST', 'column': col, 'chart_type': 'bar'})
-
-        # Single columns or paired inputs
         uv = form.get('univariate_column')
         if uv:
             config.append({'proc': 'UNIVARIATE', 'column': uv, 'chart_type': form.get('univariate_chart_type', 'bar')})
 
-        corr_x = form.get('corr_x')
-        corr_y = form.get('corr_y')
-        if corr_x and corr_y:
-            config.append({'proc': 'CORR', 'column': f'{corr_x} vs {corr_y}', 'chart_type': 'line'})
+        for col in form.getlist('cluster_column'):
+            config.append({'proc': 'CLUSTER', 'column': col, 'chart_type': form.get('cluster_chart_type', 'bar')})
+
+        for col in form.getlist('hpforest_option'):
+            config.append({'proc': 'HPFOREST', 'column': col, 'chart_type': form.get('hpforest_chart_type', 'bar')})
+
+        cx = form.get('corr_x')
+        cy = form.get('corr_y')
+        if cx and cy:
+            config.append({'proc': 'CORR', 'column': f'{cx} vs {cy}', 'chart_type': 'line'})
 
         sgx = form.get('sgplot_x')
         sgy = form.get('sgplot_y')
@@ -400,28 +398,21 @@ def config_visual():
         if arima:
             config.append({'proc': 'ARIMA', 'column': arima, 'chart_type': 'line'})
 
-        log_target = form.get('logistic_target')
-        log_predictor = form.get('logistic_predictor')
-        if log_target and log_predictor:
-            config.append({'proc': 'LOGISTIC', 'column': f'{log_predictor} → {log_target}', 'chart_type': 'line'})
+        target = form.get('logistic_target')
+        predictor = form.get('logistic_predictor')
+        if target and predictor:
+            config.append({'proc': 'LOGISTIC', 'column': f'{predictor} → {target}', 'chart_type': 'line'})
 
-        # Save to CSV
         output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'config_visual.csv')
         with open(output_path, 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=['proc', 'column', 'chart_type'])
             writer.writeheader()
             writer.writerows(config)
 
-        flash("✅ Visual config saved successfully!", "success")
+        flash("✅ Visual configuration saved successfully.", "success")
         return redirect('/config-visual')
 
-    # If GET, render the page
-    return render_template(
-        'config-visual.html',
-        numeric_columns=numeric_columns,
-        categorical_columns=categorical_columns
-    )
-
+    return render_template('config-visual.html', numeric_columns=numeric_columns, categorical_columns=categorical_columns)
 
 
 @app.route('/walkthrough')

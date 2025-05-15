@@ -360,25 +360,25 @@ function drawForecastChart(proc) {
   });
 }
 
-
-
 function drawForestChart(proc) {
   const ctx = document.getElementById(`${proc}-chart`).getContext("2d");
-  const select = document.getElementById("hpforestOption");
-  const selected = Array.from(select?.selectedOptions || []).map(opt => opt.value);
+  const metric = document.getElementById("hpforestOption").value;
+  const chartType = document.getElementById(`${proc}ChartType`)?.value || 'bar';
+  const isHorizontal = document.getElementById(`${proc}Horizontal`)?.checked;
   const hint = document.getElementById(`${proc}Hint`);
-  if (!selected.length) return;
-  hint.textContent = `🌲 Showing forest metrics: ${selected.join(', ')}`;
+  if (!metric) return;
+  hint.textContent = `🌲 Showing forest metric: ${metric}`;
   if (window[`${proc}Chart`]) window[`${proc}Chart`].destroy();
-  const labels = selected;
+  const labels = metric === 'accuracy' ? ['Prediction Accuracy'] : ['Feature A', 'Feature B', 'Feature C'];
+  const data = metric === 'accuracy' ? [Math.floor(Math.random()*10 + 90)] : [Math.floor(Math.random()*10+1), Math.floor(Math.random()*10+1), Math.floor(Math.random()*10+1)];
   const datasets = [{
-    label: 'Metric Value',
-    data: selected.map(() => Math.floor(Math.random() * 20 + 5)),
-    backgroundColor: selected.map((_, i) => `hsl(${i*45}, 70%, 60%)`)
+    label: metric,
+    data: data,
+    backgroundColor: labels.map((_, i) => `hsl(${i * 60}, 70%, 60%)`)
   }];
   window[`${proc}Chart`] = new Chart(ctx, {
-    type: 'bar',
-    data: { labels, datasets: [{ label: opt, data }] },
+    type: chartType,
+    data: { labels, datasets },
     options: { responsive: true }
   });
 }
