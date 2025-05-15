@@ -1,60 +1,169 @@
+
 {% extends "layout.html" %}
 {% block content %}
 <div class="container mt-4">
 
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="/">Home</a></li>
-      <li class="breadcrumb-item"><a href="/sample">Sample Dataset</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Configure SAS Analysis</li>
-    </ol>
-  </nav>
+  <h2 class="mb-3">📈 Configure Visuals for SAS Output</h2>
+  <form method="POST" action="/config-visual">
+    <ul class="nav nav-tabs" id="procTabs" role="tablist">
+      {% for proc in ['MEANS', 'FREQ', 'CORR', 'REG', 'UNIVARIATE', 'SGPLOT', 'GLM', 'ARIMA', 'CLUSTER', 'HPFOREST'] %}
+      <li class="nav-item" role="presentation">
+        <button class="nav-link {% if loop.first %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#{{ proc.lower() }}" type="button" role="tab">
+          {{ proc }}
+        </button>
+      </li>
+      {% endfor %}
+    </ul>
 
-  <h2 class="mb-3">⚙️ Configure SAS Procedures</h2>
-  <p class="text-muted">Step 5 of 6 · Choose the appropriate SAS procedures based on your sampled data.</p>
+    <div class="tab-content border p-4 bg-white rounded-bottom">
 
-  <ul class="nav nav-tabs" id="procTabs" role="tablist">
-    {% for proc in ['MEANS', 'FREQ', 'LOGISTIC', 'SQL', 'CORR', 'REG', 'UNIVARIATE', 'SGPLOT', 'GLM'] %}
-    <li class="nav-item" role="presentation">
-      <button class="nav-link {% if loop.first %}active{% endif %}" id="{{ proc.lower() }}-tab" data-bs-toggle="tab" data-bs-target="#{{ proc.lower() }}" type="button" role="tab">
-        PROC {{ proc }}
-      </button>
-    </li>
-    {% endfor %}
-  </ul>
+      <!-- MEANS -->
+      <div class="tab-pane fade show active" id="means" role="tabpanel">
+        <label class="form-label">PROC MEANS</label>
+        <select name="means_visual_columns" class="form-select" multiple>
+          {% for col in numeric_columns %}
+          <option value="{{ col }}" {% if 'MEANS' in selected and col in selected['MEANS'] %}selected{% endif %}>{{ col }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-  <form method="POST" action="/config-analysis">
-    <div class="tab-content p-4 border border-top-0 bg-white shadow-sm rounded-bottom">
+      <!-- FREQ -->
+      <div class="tab-pane fade" id="freq" role="tabpanel">
+        <label class="form-label">PROC FREQ</label>
+        <select name="freq_visual_columns" class="form-select" multiple>
+          {% for col in categorical_columns %}
+          <option value="{{ col }}" {% if 'FREQ' in selected and col in selected['FREQ'] %}selected{% endif %}>{{ col }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-      <!-- GLM Tab -->
+      <!-- CORR -->
+      <div class="tab-pane fade" id="corr" role="tabpanel">
+        <label class="form-label">PROC CORR</label>
+        <select name="corr_visual_columns" class="form-select" multiple>
+          {% for col in numeric_columns %}
+          <option value="{{ col }}" {% if 'CORR' in selected and col in selected['CORR'] %}selected{% endif %}>{{ col }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- REG -->
+      <div class="tab-pane fade" id="reg" role="tabpanel">
+        <label class="form-label">PROC REG</label>
+        <select name="reg_x" class="form-select mb-2">
+          <option value="">X-Axis</option>
+          {% for col in numeric_columns %}
+          <option value="{{ col }}" {% if 'REG' in selected and col == selected['REG'][0] %}selected{% endif %}>{{ col }}</option>
+          {% endfor %}
+        </select>
+        <select name="reg_y" class="form-select">
+          <option value="">Y-Axis</option>
+          {% for col in numeric_columns %}
+          <option value="{{ col }}" {% if 'REG' in selected and col == selected['REG'][1] %}selected{% endif %}>{{ col }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- UNIVARIATE -->
+      <div class="tab-pane fade" id="univariate" role="tabpanel">
+        <label class="form-label">PROC UNIVARIATE</label>
+        <select name="univariate_visual_columns" class="form-select" multiple>
+          {% for col in numeric_columns %}
+          <option value="{{ col }}" {% if 'UNIVARIATE' in selected and col in selected['UNIVARIATE'] %}selected{% endif %}>{{ col }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- SGPLOT -->
+      <div class="tab-pane fade" id="sgplot" role="tabpanel">
+        <label class="form-label">PROC SGPLOT</label>
+        <select name="sgplot_x" class="form-select mb-2">
+          <option value="">X-Axis</option>
+          {% for col in numeric_columns + categorical_columns %}
+          <option value="{{ col }}" {% if 'SGPLOT' in selected and col == selected['SGPLOT'][0] %}selected{% endif %}>{{ col }}</option>
+          {% endfor %}
+        </select>
+        <select name="sgplot_y" class="form-select">
+          <option value="">Y-Axis</option>
+          {% for col in numeric_columns %}
+          <option value="{{ col }}" {% if 'SGPLOT' in selected and col == selected['SGPLOT'][1] %}selected{% endif %}>{{ col }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- GLM -->
       <div class="tab-pane fade" id="glm" role="tabpanel">
-        <h5 class="text-danger">📊 PROC GLM <span class="badge bg-light text-dark">General Linear Model</span></h5>
-        <p>Used for ANOVA, regression, and interaction modeling.</p>
-        <div class="mb-2">
-          <label>Target (dependent variable):</label>
-          <select class="form-select" name="glm_target">
-            {% for col in numeric_columns %}
-              <option value="{{ col }}">{{ col }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="mb-2">
-          <label>Predictor variables (independent):</label>
-          <select class="form-select" name="glm_predictors" multiple>
-            {% for col in df.columns %}
-              <option value="{{ col }}">{{ col }}</option>
-            {% endfor %}
-          </select>
-        </div>
+        <label class="form-label">PROC GLM</label>
+        <select name="glm_visual_option" class="form-select">
+          <option value="">Select Visual</option>
+          <option value="main_effect" {% if 'GLM' in selected and 'main_effect' in selected['GLM'] %}selected{% endif %}>Main Effect</option>
+          <option value="interaction" {% if 'GLM' in selected and 'interaction' in selected['GLM'] %}selected{% endif %}>Interaction</option>
+        </select>
+      </div>
+
+      <!-- ARIMA -->
+      <div class="tab-pane fade" id="arima" role="tabpanel">
+        <label class="form-label">PROC ARIMA</label>
+        <select name="arima_visual" class="form-select">
+          <option value="">Select Forecast Target</option>
+          {% for col in numeric_columns %}
+          <option value="{{ col }}" {% if 'ARIMA' in selected and col in selected['ARIMA'] %}selected{% endif %}>{{ col }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- CLUSTER -->
+      <div class="tab-pane fade" id="cluster" role="tabpanel">
+        <label class="form-label">PROC CLUSTER</label>
+        <select name="cluster_visual" class="form-select">
+          <option value="">Select Cluster Column</option>
+          {% for col in numeric_columns %}
+          <option value="{{ col }}" {% if 'CLUSTER' in selected and col in selected['CLUSTER'] %}selected{% endif %}>{{ col }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- HPFOREST -->
+      <div class="tab-pane fade" id="hpforest" role="tabpanel">
+        <label class="form-label">PROC HPFOREST</label>
+        <select name="hpforest_visual" class="form-select">
+          <option value="">Select Option</option>
+          <option value="prediction_accuracy" {% if 'HPFOREST' in selected and 'prediction_accuracy' in selected['HPFOREST'] %}selected{% endif %}>Prediction Accuracy</option>
+          <option value="variable_importance" {% if 'HPFOREST' in selected and 'variable_importance' in selected['HPFOREST'] %}selected{% endif %}>Variable Importance</option>
+        </select>
       </div>
 
     </div>
 
-    <div class="mt-4 text-end">
-      <button type="submit" class="btn btn-primary">
-        💾 Save Configuration and Continue
-      </button>
+    <div class="mt-4 d-flex justify-content-end gap-3">
+      <button type="submit" class="btn btn-success">💾 Save Visual Config</button>
+      <button id="downloadVisual" type="button" class="btn btn-outline-info">⬇️ Download config_visual.csv</button>
     </div>
   </form>
+
+  {% if preview_gallery %}
+  <div class="mt-4">
+    <h5>🖼️ Preview of Visual Config</h5>
+    {{ preview_gallery|safe }}
+  </div>
+  {% endif %}
+
+  <script>
+  document.getElementById("downloadVisual").addEventListener("click", async function () {
+    const button = this;
+    button.disabled = true;
+    button.innerText = "⏳ Saving...";
+    try {
+      const response = await fetch("/save-visual-config", { method: "POST" });
+      if (!response.ok) throw new Error("Failed to save");
+      window.location.href = "/download/config_visual.csv";
+    } catch (err) {
+      alert("❌ Failed to save visual configuration.");
+    } finally {
+      button.disabled = false;
+      button.innerText = "⬇️ Download config_visual.csv";
+    }
+  });
+  </script>
 </div>
 {% endblock %}

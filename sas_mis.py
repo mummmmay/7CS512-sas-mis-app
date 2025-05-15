@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, jsonify, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, jsonify
 import pandas as pd
 import numpy as np
 import os
 import json
 import csv
 from datetime import datetime
+from collections import defaultdict
 
 app = Flask(__name__)
 app.secret_key = 'my_super_secret_key'
@@ -69,7 +70,6 @@ def columns():
 
 @app.route('/conditions', methods=['GET', 'POST'])
 def conditions():
-    # Load previously filtered dataset
     df = pd.read_pickle(os.path.join(app.config['UPLOAD_FOLDER'], 'filtered_data.pkl'))
     columns = df.columns.tolist()
     preview_table = None
@@ -78,12 +78,10 @@ def conditions():
         group_indexes = request.form.getlist('group_index[]')
 
         if not group_indexes:
-            # No new conditional columns added — just copy filtered to conditioned
             df.to_pickle(os.path.join(app.config['UPLOAD_FOLDER'], 'conditioned_data.pkl'))
             flash("✅ No conditions added. Proceeding with selected columns only.", "info")
             return redirect('/sample')
 
-        # Add derived columns per group
         for group_index in group_indexes:
             col_name = request.form.get(f'column_name_{group_index}')
             value_true = request.form.get(f'value_true_{group_index}')
@@ -114,17 +112,13 @@ def conditions():
                 part = f"(df['{field}'] {operator_} {value_casted})"
                 condition_str += part if i == 0 else f" {logic} {part}"
 
-            # Apply condition
             try:
                 df[col_name] = np.where(eval(condition_str), value_true, value_false)
             except Exception as e:
                 flash(f"⚠️ Error in condition for '{col_name}': {e}", "danger")
 
-        # Save updated dataset
         df.to_pickle(os.path.join(app.config['UPLOAD_FOLDER'], 'conditioned_data.pkl'))
         flash("✅ Conditioned data saved successfully.", "success")
-
-        # Optional preview
         preview_table = df.head(10).to_html(classes='table table-bordered table-sm', index=False)
 
     return render_template('conditions.html', columns=columns, preview_table=preview_table)
@@ -170,12 +164,10 @@ def sample_dataset():
             flash("🛑 Missing both filtered and conditioned data. Please select columns first.", "danger")
             return redirect('/columns')
 
-        # Sample
         df_sample = df.sample(n=min(20000, len(df)), random_state=42)
         df_sample.to_pickle(sample_path)
         df_sample.to_csv(csv_path, index=False)
 
-        # Preview + summary
         pd.set_option("display.max_columns", None)
         summary_html = df_sample.describe(include='all').transpose().head(10).to_html(classes='table table-bordered')
         preview_html = df_sample.head(10).to_html(classes="table table-striped table-bordered", index=False)
@@ -205,55 +197,73 @@ def config_analysis():
     binary_columns = [col for col in df.columns if df[col].nunique() == 2]
 
     if request.method == 'POST':
-        config = []
+        config_map = defaultdict(list)
 
-        # PROC MEANS
+        def add(proc, value):
+            if value:
+                config_map[f"PROC {proc}"].append(value)
+
         for col in request.form.getlist('means_columns'):
-            config.append({'PROC': 'MEANS', 'Column': col})
+            add('MEANS', col)
 
-        # PROC FREQ
         for col in request.form.getlist('freq_columns'):
-            config.append({'PROC': 'FREQ', 'Column': col})
+            add('FREQ', col)
 
-        # PROC LOGISTIC
-        target = request.form.get('logistic_target')
-        predictors = request.form.getlist('logistic_predictors')
-        if target:
-            config.append({'PROC': 'LOGISTIC', 'Column': f"Target: {target}"})
-            for col in predictors:
-                config.append({'PROC': 'LOGISTIC', 'Column': col})
+        add('LOGISTIC', request.form.get('logistic_target'))
+        for col in request.form.getlist('logistic_predictors'):
+            add('LOGISTIC', col)
 
-        # PROC SQL
         sql = request.form.get('sql_query')
         if sql:
-            config.append({'PROC': 'SQL', 'Column': sql.strip()})
+            add('SQL', sql.strip())
 
-        # PROC CORR
         for col in request.form.getlist('corr_columns'):
-            config.append({'PROC': 'CORR', 'Column': col})
+            add('CORR', col)
 
-        # PROC REG
-        reg_target = request.form.get('reg_target')
-        reg_predictors = request.form.getlist('reg_predictors')
-        if reg_target:
-            config.append({'PROC': 'REG', 'Column': f"Target: {reg_target}"})
-            for col in reg_predictors:
-                config.append({'PROC': 'REG', 'Column': col})
+        add('REG', request.form.get('reg_target'))
+        for col in request.form.getlist('reg_predictors'):
+            add('REG', col)
 
-        # PROC UNIVARIATE
         for col in request.form.getlist('univariate_columns'):
-            config.append({'PROC': 'UNIVARIATE', 'Column': col})
+            add('UNIVARIATE', col)
 
-        # PROC SGPLOT
-        sgplot_x = request.form.get('sgplot_x')
-        sgplot_y = request.form.get('sgplot_y')
-        if sgplot_x and sgplot_y:
-            config.append({'PROC': 'SGPLOT', 'Column': f"X: {sgplot_x}, Y: {sgplot_y}"})
+        x, y = request.form.get('sgplot_x'), request.form.get('sgplot_y')
+        if x and y:
+            add('SGPLOT', x)
+            add('SGPLOT', y)
 
-        # Save config file
-        config_df = pd.DataFrame(config)
-        config_df.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'config_analysis.csv'), index=False)
-        flash("✅ PROC configuration saved successfully!", "success")
+        add('GLM', request.form.get('glm_target'))
+        for col in request.form.getlist('glm_predictors'):
+            add('GLM', col)
+
+        t, y = request.form.get('arima_time'), request.form.get('arima_target')
+        if t and y:
+            add('ARIMA', t)
+            add('ARIMA', y)
+
+        for col in request.form.getlist('cluster_columns'):
+            add('CLUSTER', col)
+
+        add('HPFOREST', request.form.get('hpforest_target'))
+        for col in request.form.getlist('hpforest_predictors'):
+            add('HPFOREST', col)
+
+        if not config_map:
+            flash("⚠️ No PROC configuration selected.", "warning")
+            return redirect('/config-analysis')
+
+        # Save to JSON
+        with open(os.path.join(app.config['UPLOAD_FOLDER'], 'user_config.json'), 'w') as f:
+            json.dump(dict(config_map), f)
+
+        # Save CSV immediately
+        with open(os.path.join(app.config['DOWNLOAD_FOLDER'], 'config_analysis.csv'), 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['procedure', 'variables'])
+            for proc, values in config_map.items():
+                writer.writerow([proc, ' '.join(values)])
+
+        flash("✅ All PROC configurations saved successfully!", "success")
         return redirect('/config-visual')
 
     return render_template(
@@ -261,41 +271,62 @@ def config_analysis():
         numeric_columns=numeric_columns,
         categorical_columns=categorical_columns,
         binary_columns=binary_columns,
-        df=df  # needed for SGPLOT dropdown
+        df=df,
+        download_link="/download/config_analysis.csv"
     )
 
+@app.route('/save-config', methods=['POST'])
+def save_config():
+    try:
+        config_path = os.path.join(app.config['UPLOAD_FOLDER'], 'user_config.json')
+        if not os.path.exists(config_path):
+            return "No saved config", 400
 
-# SAS Visualization Procs
-VISUAL_PROCS = {
-    "PROC SGPLOT": {
-        "desc": "Simple bar, line, scatter, or histogram",
-        "roles": ["x", "y", "group"]
-    },
-    "PROC SGSCATTER": {
-        "desc": "Scatter plot matrix of numeric variables",
-        "roles": ["variables"]
-    },
-    "PROC SGPANEL": {
-        "desc": "Faceted (small multiple) plots",
-        "roles": ["x", "y", "panel"]
-    },
-    "PROC BOXPLOT": {
-        "desc": "Boxplot for grouped distributions",
-        "roles": ["category", "y"]
-    },
-    "PROC GCHART": {
-        "desc": "Bar/Pie chart using categories",
-        "roles": ["category", "response"]
-    },
-    "PROC GCONTOUR": {
-        "desc": "Contour plot",
-        "roles": ["x", "y", "z"]
-    },
-    "PROC G3D": {
-        "desc": "3D scatter or surface plot",
-        "roles": ["x", "y", "z"]
-    }
-}
+        with open(config_path) as f:
+            config_map = json.load(f)
+
+        with open(os.path.join(app.config['DOWNLOAD_FOLDER'], 'config_analysis.csv'), 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['procedure', 'variables'])
+            for proc, values in config_map.items():
+                writer.writerow([proc, ' '.join(values)])
+
+        return "Saved", 200
+    except Exception as e:
+        return f"Error: {e}", 500
+
+@app.route('/save-visual-config', methods=['POST'])
+def save_visual_config():
+    sampled_path = os.path.join(app.config['UPLOAD_FOLDER'], 'sampled_data.pkl')
+    if not os.path.exists(sampled_path):
+        return "Sampled data not found", 400
+
+    df = pd.read_pickle(sampled_path)
+    numeric_columns = df.select_dtypes(include='number').columns.tolist()
+    categorical_columns = df.select_dtypes(include=['object', 'category', 'bool']).columns.tolist()
+
+    config_path = os.path.join(app.config['UPLOAD_FOLDER'], 'user_visual_config.json')
+    if not os.path.exists(config_path):
+        return "No saved visual config", 400
+
+    with open(config_path) as f:
+        visual_map = json.load(f)
+
+    try:
+
+        # Save visual_map to JSON for later download use
+        with open(os.path.join(app.config['UPLOAD_FOLDER'], 'user_visual_config.json'), 'w') as f_json:
+            json.dump({k: v for k, v in visual_map.items()}, f_json)
+
+        with open(os.path.join(app.config['DOWNLOAD_FOLDER'], 'config_visual.csv'), 'w', newline='') as f:
+        
+            writer = csv.writer(f)
+            writer.writerow(['procedure', 'variables'])
+            for proc, vars in visual_map.items():
+                writer.writerow([proc, ' '.join(vars)])
+        return "Saved", 200
+    except Exception as e:
+        return f"Error: {e}", 500
 
 @app.route('/config-visual', methods=['GET', 'POST'])
 def config_visual():
@@ -309,69 +340,88 @@ def config_visual():
     categorical_columns = df.select_dtypes(include=['object', 'category', 'bool']).columns.tolist()
 
     if request.method == 'POST':
-        visual_config = []
+        visual_map = defaultdict(list)
 
-        # MEANS
+        def add(proc, *vars):
+            vars = [v for v in vars if v]
+            if vars:
+                visual_map[proc].extend(vars)
+
         for col in request.form.getlist('means_visual_columns'):
-            visual_config.append({'PROC': 'MEANS', 'Visual': f'Box/Histogram for {col}'})
+            add('MEANS', col)
 
-        # FREQ
         for col in request.form.getlist('freq_visual_columns'):
-            visual_config.append({'PROC': 'FREQ', 'Visual': f'Bar/Pie chart for {col}'})
+            add('FREQ', col)
 
-        # LOGISTIC (default visual placeholder)
-        visual_config.append({'PROC': 'LOGISTIC', 'Visual': 'ROC Curve / Accuracy plot'})
-
-        # SQL (no fixed visual)
-        visual_config.append({'PROC': 'SQL', 'Visual': 'Depends on query output'})
-
-        # CORR
         for col in request.form.getlist('corr_visual_columns'):
-            visual_config.append({'PROC': 'CORR', 'Visual': f'Heatmap for {col}'})
+            add('CORR', col)
 
-        # REG
         reg_x = request.form.get('reg_x')
         reg_y = request.form.get('reg_y')
         if reg_x and reg_y:
-            visual_config.append({'PROC': 'REG', 'Visual': f'Regression plot X={reg_x}, Y={reg_y}'})
+            add('REG', reg_x, reg_y)
 
-        # UNIVARIATE
         for col in request.form.getlist('univariate_visual_columns'):
-            visual_config.append({'PROC': 'UNIVARIATE', 'Visual': f'Skew/Kurtosis for {col}'})
+            add('UNIVARIATE', col)
 
-        # SGPLOT
         sgplot_x = request.form.get('sgplot_x')
         sgplot_y = request.form.get('sgplot_y')
         if sgplot_x and sgplot_y:
-            visual_config.append({'PROC': 'SGPLOT', 'Visual': f'Custom plot: X={sgplot_x}, Y={sgplot_y}'})
+            add('SGPLOT', sgplot_x, sgplot_y)
 
-        # Save the visual configuration
-        config_df = pd.DataFrame(visual_config)
-        config_df.to_csv(os.path.join(app.config['UPLOAD_FOLDER'], 'config_visual.csv'), index=False)
-        flash("✅ Visualization configuration saved!", "success")
+        glm_visual = request.form.get('glm_visual_option')
+        if glm_visual:
+            add('GLM', glm_visual)
 
-        # Optional: render preview summary
-        preview_html = config_df.to_html(classes="table table-bordered table-sm", index=False)
+        arima_visual = request.form.get('arima_visual')
+        if arima_visual:
+            add('ARIMA', arima_visual)
+
+        cluster_visual = request.form.get('cluster_visual')
+        if cluster_visual:
+            add('CLUSTER', cluster_visual)
+
+        hpforest_visual = request.form.get('hpforest_visual')
+        if hpforest_visual:
+            add('HPFOREST', hpforest_visual)
+
+
+        # Save visual_map to JSON for later download use
+        with open(os.path.join(app.config['UPLOAD_FOLDER'], 'user_visual_config.json'), 'w') as f_json:
+            json.dump({k: v for k, v in visual_map.items()}, f_json)
+
+        with open(os.path.join(app.config['DOWNLOAD_FOLDER'], 'config_visual.csv'), 'w', newline='') as f:
+        
+            writer = csv.writer(f)
+            writer.writerow(['procedure', 'variables'])
+            for proc, vars in visual_map.items():
+                writer.writerow([f'PROC {proc}', ' '.join(vars)])
+
+        flash("✅ Visual configuration saved in SAS format!", "success")
+        preview_html = pd.DataFrame([
+            {'procedure': f'PROC {proc}', 'variables': ' '.join(vars)}
+            for proc, vars in visual_map.items()
+        ]).to_html(classes="table table-bordered table-sm", index=False)
+
         return render_template(
             'config-visual.html',
             numeric_columns=numeric_columns,
             categorical_columns=categorical_columns,
             df=df,
-            preview_gallery=preview_html
+            preview_gallery=preview_html,
+            download_link="/download/config_visual.csv"
         )
 
     return render_template(
         'config-visual.html',
         numeric_columns=numeric_columns,
         categorical_columns=categorical_columns,
-        df=df,
-        preview_gallery=None
+        df=df
     )
 
 @app.route('/walkthrough')
 def walkthrough():
     return render_template('walkthrough.html')
-
 
 if __name__ == "__main__":
     app.run(debug=True)

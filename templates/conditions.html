@@ -1,8 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="container mt-4">
-
-  <!-- Breadcrumb -->
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="/">Home</a></li>
@@ -11,35 +9,151 @@
     </ol>
   </nav>
 
-  <h2 class="mb-3">🧠 Add Conditional Columns</h2>
-  <p class="text-muted">Step 3 of 6 · Create new columns based on conditions across existing fields.</p>
+  <h2>🧠 Add Conditional Columns</h2>
+  <p>Step 3 of 6 · Create new columns based on conditions across existing fields.</p>
 
-  <form method="POST">
-    <!-- Your dynamic conditional column UI goes here (JS-powered) -->
-    <!-- This might include fields like: column name, condition group, etc. -->
-    {{ form_body|safe if form_body is defined }}
+  <form method="POST" action="/conditions">
+    <div id="group-container"></div>
 
-    <div class="text-end mt-4 d-flex justify-content-between">
-      <!-- Skip button -->
-      <a href="/skip-conditions" class="btn btn-outline-secondary">
-        ⏭️ Skip and Continue without Adding Columns
-      </a>
+    <div class="mt-3">
+      <button type="button" class="btn btn-outline-primary" onclick="addGroup()">➕ Add New Derived Column</button>
+    </div>
 
-      <button type="submit" class="btn btn-success">
-        ➕ Save Columns and Continue
-      </button>
-
+    <div class="d-flex justify-content-between mt-4">
+      <a href="/skip-conditions" class="btn btn-outline-info">⏭️ Skip and Continue without Adding Columns</a>
+      <div>
+        <button type="button" class="btn btn-outline-warning me-2" onclick="previewConditions()">👁️ Preview Derived Columns</button>
+        <button type="submit" class="btn btn-success">➕ Save Columns and Continue</button>
+      </div>
     </div>
   </form>
 
+  <div id="livePreviewContainer" class="mt-5 d-none">
+    <h5>🧪 Live Preview of Conditions (Sample Output)</h5>
+    <pre id="previewOutput" class="bg-light p-3 rounded border small"></pre>
+  </div>
+
   {% if preview_table %}
-  <div class="card mt-4">
-    <div class="card-header">👁️ Preview with New Columns</div>
-    <div class="card-body table-responsive">
+  <div class="mt-5">
+    <h5>🧾 Preview of Dataset with Derived Columns</h5>
+    <div class="table-responsive" style="max-height: 500px; overflow-x: auto;">
       {{ preview_table|safe }}
     </div>
   </div>
+
+  <div class="mt-4 text-end">
+    <a href="/sample" class="btn btn-primary btn-lg">
+      🚀 Continue to Sampling Step
+    </a>
+  </div>
   {% endif %}
 
-</div>
+  <script>
+    const availableColumns = {{ columns|tojson|safe }};
+    let groupIndex = 0;
+
+    function addGroup() {
+      const container = document.getElementById("group-container");
+      const groupHTML = `
+        <div class="card mt-4 p-3 border">
+          <input type="hidden" name="group_index[]" value="${groupIndex}">
+          <div class="mb-2">
+            <label>🆕 New Column Name</label>
+            <input type="text" class="form-control" name="column_name_${groupIndex}" required>
+          </div>
+          <div class="mb-2">
+            <label>✅ Value if Condition is True</label>
+            <input type="text" class="form-control" name="value_true_${groupIndex}" required>
+          </div>
+          <div class="mb-2">
+            <label>❌ Value if Condition is False</label>
+            <input type="text" class="form-control" name="value_false_${groupIndex}" required>
+          </div>
+          <div class="mt-3">
+            <label>🔍 Conditions</label>
+            <table class="table table-sm table-bordered mt-2">
+              <thead>
+                <tr>
+                  <th>Field</th><th>Operator</th><th>Value</th><th>Logic</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="rules_${groupIndex}"></tbody>
+            </table>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addConditionRow(${groupIndex})">➕ Add Condition</button>
+          </div>
+        </div>`;
+      container.insertAdjacentHTML("beforeend", groupHTML);
+      groupIndex++;
+    }
+
+    function addConditionRow(index) {
+      const selectOptions = availableColumns.map(c => `<option value="${c}">${c}</option>`).join("");
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><select class="form-select" name="field_${index}[]">${selectOptions}</select></td>
+        <td>
+          <select class="form-select" name="operator_${index}[]">
+            <option value="==">==</option>
+            <option value="!=">!=</option>
+            <option value=">">&gt;</option>
+            <option value=">=">&gt;=</option>
+            <option value="<">&lt;</option>
+            <option value="<=">&lt;=</option>
+            <option value="in">in</option>
+          </select>
+        </td>
+        <td><input class="form-control" name="value_${index}[]" required></td>
+        <td>
+          <select class="form-select" name="logic_${index}[]">
+            <option value="">--</option>
+            <option value="and">AND</option>
+            <option value="or">OR</option>
+          </select>
+        </td>
+        <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">🗑️</button></td>
+      `;
+      document.getElementById("rules_" + index).appendChild(row);
+    }
+
+    function previewConditions() {
+      const previewContainer = document.getElementById("livePreviewContainer");
+      const previewOutput = document.getElementById("previewOutput");
+
+      let text = "";
+      document.querySelectorAll("#group-container > .card").forEach((groupCard, i) => {
+        const colName = groupCard.querySelector(`[name='column_name_${i}']`)?.value;
+        const valueTrue = groupCard.querySelector(`[name='value_true_${i}']`)?.value;
+        const valueFalse = groupCard.querySelector(`[name='value_false_${i}']`)?.value;
+
+        const rules = groupCard.querySelectorAll(`#rules_${i} tr`);
+        let conditionDesc = "";
+        rules.forEach((row, idx) => {
+          const field = row.querySelector(`[name='field_${i}[]']`)?.value;
+          const operator = row.querySelector(`[name='operator_${i}[]']`)?.value;
+          const val = row.querySelector(`[name='value_${i}[]']`)?.value;
+          const logic = row.querySelector(`[name='logic_${i}[]']`)?.value;
+          const part = `${field} ${operator} "${val}"`;
+          conditionDesc += (idx > 0 && logic ? ` ${logic} ` : '') + part;
+        });
+
+        text += `🧩 Column: ${colName}
+✔ If: ${conditionDesc}
+🟢 Then: ${valueTrue}
+🔴 Else: ${valueFalse}
+
+`;
+      });
+
+      previewOutput.textContent = text || "No condition groups defined yet.";
+      previewContainer.classList.remove("d-none");
+    }
+
+    // Auto-add one condition group on load
+    window.onload = () => {
+      if (document.getElementById("group-container").children.length === 0) {
+        addGroup();
+      }
+    };
+  </script>
+
 {% endblock %}
