@@ -17,7 +17,7 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['DOWNLOAD_FOLDER'] = 'downloads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
-os.environ["EMAIL_RECIPIENT"] = form.get('email_recipient')
+# os.environ["EMAIL_RECIPIENT"] = form.get('email_recipient')
 
 @app.context_processor
 def inject_now():
@@ -184,7 +184,7 @@ def sample_dataset():
 
     return render_template('sample.html', summary=summary_html, preview=preview_html, filename='dataset_sampling.csv', n=len(df_sample))
 
-@app.route('/download/<filename>')
+@app.route('/downloads/<filename>')
 def download_file(filename):
     return send_from_directory(app.config['DOWNLOAD_FOLDER'], filename, as_attachment=True)
 
@@ -303,7 +303,7 @@ def save_config():
         if not os.path.exists(config_path):
             return "No saved config", 400
 
-        with open(config_path) as f:
+        with open(config_path, "w", newline="", encoding="utf-8") as f:
             config_map = json.load(f)
 
         with open(os.path.join(app.config['DOWNLOAD_FOLDER'], 'config_analysis.csv'), 'w', newline='') as f:
@@ -349,72 +349,68 @@ def save_visual_config():
     except Exception as e:
         return f"Error: {e}", 500
 
-@app.route('/config-visual', methods=['GET', 'POST'])
+@app.route("/config-visual", methods=["GET", "POST"])
 def config_visual():
-    import csv
     sampled_path = os.path.join(app.config['UPLOAD_FOLDER'], 'sampled_data.pkl')
-    session['email_recipient'] = request.form.get('email_recipient', '')
     if not os.path.exists(sampled_path):
         flash("⚠️ Please sample the dataset first.", "warning")
-        return redirect('/sample')
+        return redirect("/sample")
 
     df = pd.read_pickle(sampled_path)
     numeric_columns = df.select_dtypes(include=['number']).columns.tolist()
     categorical_columns = df.select_dtypes(include=['object', 'category', 'bool']).columns.tolist()
 
-    if request.method == 'POST':
-        form = request.form
+    if request.method == "POST":
         config = []
 
-        for col in form.getlist('means_column'):
-            config.append({'proc': 'MEANS', 'column': col, 'chart_type': form.get('means_chart_type', 'bar')})
+        def add_rows(proc, key):
+            for value in request.form.getlist(key):
+                config.append({"PROC": proc, "Variable": value})
 
-        for col in form.getlist('freq_column'):
-            config.append({'proc': 'FREQ', 'column': col, 'chart_type': form.get('freq_chart_type', 'bar')})
+        add_rows("MEANS", "means_column")
+        add_rows("FREQ", "freq_column")
+        add_rows("UNIVARIATE", "univariate_column")
+        add_rows("CLUSTER", "cluster_column")
 
-        uv = form.get('univariate_column')
-        if uv:
-            config.append({'proc': 'UNIVARIATE', 'column': uv, 'chart_type': form.get('univariate_chart_type', 'bar')})
+        if request.form.get("corr_x") and request.form.get("corr_y"):
+            config.append({"PROC": "CORR", "Variable": f"{request.form['corr_x']} vs {request.form['corr_y']}"})
 
-        for col in form.getlist('cluster_column'):
-            config.append({'proc': 'CLUSTER', 'column': col, 'chart_type': form.get('cluster_chart_type', 'bar')})
+        if request.form.get("sgplot_x") and request.form.get("sgplot_y"):
+            config.append({"PROC": "SGPLOT", "Variable": f"{request.form['sgplot_x']} vs {request.form['sgplot_y']}"})
 
-        for col in form.getlist('hpforest_option'):
-            config.append({'proc': 'HPFOREST', 'column': col, 'chart_type': form.get('hpforest_chart_type', 'bar')})
+        if request.form.get("glm_effect"):
+            config.append({"PROC": "GLM", "Variable": request.form["glm_effect"]})
 
-        cx = form.get('corr_x')
-        cy = form.get('corr_y')
-        if cx and cy:
-            config.append({'proc': 'CORR', 'column': f'{cx} vs {cy}', 'chart_type': 'line'})
+        if request.form.get("arima_column"):
+            config.append({"PROC": "ARIMA", "Variable": request.form["arima_column"]})
 
-        sgx = form.get('sgplot_x')
-        sgy = form.get('sgplot_y')
-        if sgx and sgy:
-            config.append({'proc': 'SGPLOT', 'column': f'{sgx} vs {sgy}', 'chart_type': 'scatter'})
+        if request.form.get("hpforest_option"):
+            config.append({"PROC": "HPFOREST", "Variable": request.form["hpforest_option"]})
 
-        glm = form.get('glm_effect')
-        if glm:
-            config.append({'proc': 'GLM', 'column': glm, 'chart_type': 'bar'})
+        if request.form.get("logistic_target") and request.form.get("logistic_predictor"):
+            config.append({
+                "PROC": "LOGISTIC",
+                "Variable": f"{request.form['logistic_predictor']} → {request.form['logistic_target']}"
+            })
 
-        arima = form.get('arima_column')
-        if arima:
-            config.append({'proc': 'ARIMA', 'column': arima, 'chart_type': 'line'})
-
-        target = form.get('logistic_target')
-        predictor = form.get('logistic_predictor')
-        if target and predictor:
-            config.append({'proc': 'LOGISTIC', 'column': f'{predictor} → {target}', 'chart_type': 'line'})
-
-        output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'config_visual.csv')
-        with open(output_path, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=['proc', 'column', 'chart_type'])
+        config_path = os.path.join(app.config['DOWNLOAD_FOLDER'], 'config_visual.csv')
+        with open(config_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=["PROC", "Variable"])
             writer.writeheader()
             writer.writerows(config)
 
         flash("✅ Visual configuration saved successfully.", "success")
-        return redirect('/config-visual')
+        return redirect("/config-visual")
 
-    return render_template('config-visual.html', numeric_columns=numeric_columns, categorical_columns=categorical_columns)
+    preview_data = df.head(200).to_json(orient="records")
+
+    return render_template(
+        "config-visual.html",
+        numeric_columns=numeric_columns,
+        categorical_columns=categorical_columns,
+        preview_data=preview_data
+    )
+
 
 @app.route('/walkthrough')
 def walkthrough():
@@ -433,7 +429,7 @@ def download_all_files():
 
     # Paths to target files
     files_to_include = {
-        "sampled_data.csv": os.path.join(app.config['UPLOAD_FOLDER'], "sampled_data.csv"),
+        "sampled_data.csv": os.path.join(app.config['UPLOAD_FOLDER'], "dataset_sampling.csv"),
         "config_analysis.csv": os.path.join(app.config['DOWNLOAD_FOLDER'], "config_analysis.csv"),
         "config_visual.csv": os.path.join(app.config['DOWNLOAD_FOLDER'], "config_visual.csv"),
     }
